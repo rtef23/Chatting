@@ -1,0 +1,10 @@
+{
+  "name": "chatting",
+  "version": "1.0.0",
+  "dependencies": 
+  {
+    "express": "~4.13.1",
+    "ejs": "~2.4.1",
+    "mysql": "5.7.13"
+  }
+}
