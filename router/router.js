@@ -37,4 +37,10 @@ module.exports = function(app){
 		});
 
 
+//################# POST ####################
+	//process member request in post method
+	app.post('/member_check', function(req, res){
+		console.log(member.mem_check);
+		member.mem_check(req.body);
+	});
 }
