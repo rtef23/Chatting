@@ -1,10 +1,58 @@
 <html>
-  <head>
-    <title>Chatting</title>
-    <link rel="stylesheet" type="text/css" href="css/style.css">
-  </head>
+	<head>
+		<title>Chatting</title>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<script text = "text/javascript">
+			function form_check(){
+				if(document.login_info.id_input.value == ''){
+					alert("ID를 체크하세요.");
+					document.login_info.id_input.focus();
+					return false;
+				}else if(document.login_info.pass_input.value == ''){
+					alert("Pass Word를 체크하세요.");
+					document.login_info.pass_input.focus();
+					return false;
+				}
+				return true;
+			}
+
+		    function page_link(str_desti){
+		    	switch(str_desti){
+		    		case "signin":
+		    			if(form_check()){
+		    				document.login_info.action = "./member_check";
+		    				document.login_info.submit();
+		    			}else{
+
+		    			}
+		    			break;
+		    		case "join":
+		    			alert("join");
+		    			break;
+		    		case "findac":
+		    			alert("find account");
+		    			break;
+		    	}
+		    }
+		</script>
+	</head>
+
   <body>
-  	<button name = 'joinMem' type = 'button'>join mem</button>
-  	<button name = 'sign_in' type = 'button'>Sign in</button>
+  	<center>
+  		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 500 height = 400></img>
+	  	<form name = "login_info" method = "POST">
+	  		<p>
+	  		<B>ID : </B>
+	  		<input type = 'text' name = 'id_input'></input>
+	  		</p>
+	  		<p>
+	  		<B>Password : </B>
+	  		<input type = 'password' name = 'pass_input'></input>
+	  		</p>
+			<button type = 'button' onclick = "javascript:page_link('join');">Create Account</button>
+	  		<button type = 'button' onclick = "javascript:page_link('signin');">Sign in</button>
+	  		<button type = 'button' onclick = "javascript:page_link('findac');">Find Account</button>
+	  	</form>
+	</center>
   </body>
 </html>
