@@ -35,12 +35,41 @@ module.exports = function(app){
 				res.end(data, "binary");
 			});
 		});
-
+	//show create member window
+	app.get("/member_create", function(req, res){
+		res.render("client/createMem.html");
+	});
 
 //################# POST ####################
-	//process member request in post method
+	//process member check request in post method
 	app.post('/member_check', function(req, res){
-		console.log(member.mem_check);
-		member.mem_check(req.body);
+		member.is_ext_mem(req.body, function(result){
+			res.writeHead(200, {"Content-Type":"text/plain"});
+			res.end(result);
+		});
+	});
+	//process member create request in post method
+	app.post('/member_create', function(req, res){
+		console.log(req.body);
+		member.is_ext_mem_id(req.body, function(altered_form){
+			switch(altered_form[result]){
+				case 0://already ext id
+				case 2://error
+					res.writeHead(200, {"Content-Type" : "text/plain"});
+					res.end(JSON.stringify({"result" : altered_form.result}));
+					break;
+				case 1://not ext id
+					member.member_create(altered_form, function(altered_form){
+						/*
+						flag
+							0 : success
+							1 : error
+						*/
+						console.log("flag1 : " + altered_form.result);
+						res.writeHead(200, {"Content-Type":"text/plain"});
+						res.end(JSON.stringify({"result" : altered_form.result}));						
+					});
+			}
+		});
 	});
 }

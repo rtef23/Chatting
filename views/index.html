@@ -22,12 +22,10 @@
 		    			if(form_check()){
 		    				document.login_info.action = "./member_check";
 		    				document.login_info.submit();
-		    			}else{
-
 		    			}
 		    			break;
 		    		case "join":
-		    			alert("join");
+		    			window.open("./member_create", "", "width = 300, height = 300, resizable=0");
 		    			break;
 		    		case "findac":
 		    			alert("find account");
@@ -43,11 +41,11 @@
 	  	<form name = "login_info" method = "POST">
 	  		<p>
 	  		<B>ID : </B>
-	  		<input type = 'text' name = 'id_input'></input>
+	  		<input type = 'text' name = 'id'></input>
 	  		</p>
 	  		<p>
 	  		<B>Password : </B>
-	  		<input type = 'password' name = 'pass_input'></input>
+	  		<input type = 'password' name = 'pass'></input>
 	  		</p>
 			<button type = 'button' onclick = "javascript:page_link('join');">Create Account</button>
 	  		<button type = 'button' onclick = "javascript:page_link('signin');">Sign in</button>

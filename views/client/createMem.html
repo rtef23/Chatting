@@ -1,0 +1,40 @@
+
+<html>
+	<head>create Account</head>
+	<script text = "text/javascript">
+		function formcheck(user_info){
+			return true;
+		}
+		function convertform(form){
+			alert("c");
+			alert(JSON.stringify(form));
+			return {
+				"id" : form.id,
+				"password" : form.password,
+				"nickname" : form.nickname,
+				"name" : form.name
+			};
+		}
+		function page_action(str_desti){
+			switch(str_desti){
+				case "create":
+					
+					break;
+				case "cancel":
+					window.close();
+					break;
+			}
+		}
+	</script>
+<body>
+	<form name = "user_info">
+		<p><B>ID : </B><input type="text" name="id"></input></p>
+		<p><B>Password : </B><input type = "password" name = "password"></input></p>
+		<p><B>Password(Repeat) : </B><input type = "password" name = "password_repeat"></input></p>
+		<p><B>NickName : </B><input type = "text" name = "nickname"></input></p>
+		<p><B>Name : </B><input type = "text" name = "name"></input></p>
+		<button type = "button" onclick = "javascript:page_action('create')">Create</button>
+		<button type = "button" onclick = "javascript:page_action('cancel');">Cancel</button>
+	</form>
+</body>
+</html>
