@@ -6,8 +6,6 @@
 			return true;
 		}
 		function convertform(form){
-			alert("c");
-			alert(JSON.stringify(form));
 			return {
 				"id" : form.id,
 				"password" : form.password,
@@ -15,26 +13,17 @@
 				"name" : form.name
 			};
 		}
-		function page_action(str_desti){
-			switch(str_desti){
-				case "create":
-					
-					break;
-				case "cancel":
-					window.close();
-					break;
-			}
-		}
+
 	</script>
 <body>
-	<form name = "user_info">
+	<form id = "user_info" method = "POST">
 		<p><B>ID : </B><input type="text" name="id"></input></p>
 		<p><B>Password : </B><input type = "password" name = "password"></input></p>
 		<p><B>Password(Repeat) : </B><input type = "password" name = "password_repeat"></input></p>
 		<p><B>NickName : </B><input type = "text" name = "nickname"></input></p>
 		<p><B>Name : </B><input type = "text" name = "name"></input></p>
-		<button type = "button" onclick = "javascript:page_action('create')">Create</button>
-		<button type = "button" onclick = "javascript:page_action('cancel');">Cancel</button>
+		<button type = "button" name = "submit_btn" id = "submit_btn">Create</button>
+		<button type = "button" onclick = "javascript:window.close();">Cancel</button>
 	</form>
 </body>
 </html>
