@@ -31,30 +31,29 @@ exports.is_ext_mem_id = function(form, callback){
 		1 : there is no id in DB
 		2 : error
 	*/
-	var id = form[id];
+	var id = form.id;
 	var conn = getConn();
 	var result;
 
-	console.log("id : " + id);
 	if(conn == null){
-		form[result] = 2;
-		callback(form);
-		return form;
+		callback(2);
+		return 2;
 	}
-	result = (conn.query("select id from member where id = '" + id + "'", function(err, rows){
+	conn.query("select id from member where id='" + id + "'", function(err, rows){
 		if(err){
 			conn.end();
-			form[result] = 2;
-			callback(form);
-			return form;
+			callback(2);
+			return 2;
 		}
-		var tmp_res = (rows.length > 0)? 0:1;
+		var tmp_res;
+		if(rows.length > 0)
+			tmp_res = 0;
+		else
+			tmp_res = 1;
 		conn.end();
-		form[result] = tmp_res;
-		callback(form);
-		console.log("tmp_res : " + form[result] + "\t" + form[id]);
-		return form;
-	}));
+		callback(tmp_res);
+		return tmp_res;
+	});
 }
 exports.member_create = function(form, callback){
 	/*
@@ -74,12 +73,11 @@ exports.member_create = function(form, callback){
 		callback(1);
 		return 1;
 	}
-	var q = conn.query("insert into member set (?)", form, function(err, result){
+	var q = conn.query("insert into member set ?", form, function(err, result){
 		if(err){
-			console.log(form);
 			conn.end();
+			console.log("2");
 			callback(1);
-			console.log(err);
 			return 1;
 		}
 		conn.end();
