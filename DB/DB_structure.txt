@@ -1,4 +1,5 @@
 drop table mem_meta;
+drop table friend_list;
 drop table chat_log;
 drop table chat_room;
 drop table member;
@@ -9,6 +10,13 @@ create table member (
 	password char(30) not null,
 	name char(20) not null,
 	primary key(id)	
+);
+create table friend_list(
+	main_id char(30),
+	sub_id char(30),
+	foreign key(main_id) references member(id) on delete cascade on update cascade,
+	foreign key(sub_id) references member(id) on delete cascade on update cascade,
+	primary key(main_id, sub_id)
 );
 create table mem_meta(
 	user_id char(30) not null,
