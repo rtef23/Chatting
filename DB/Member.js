@@ -8,8 +8,6 @@ exports.is_ext_mem = function (form, callback){
 	var id = form.id;
 	var pass = form.password;
 
-	console.log("id : " + id);
-	console.log("pass : " + pass);
 	if(conn == null){
 		callback(form, false);
 		return false;
@@ -22,7 +20,6 @@ exports.is_ext_mem = function (form, callback){
 			return false;
 		}
 		conn.end();
-		console.log("rows : " + rows[0].cnt);
 		var resu = ((rows[0].cnt == 1)?true:false);
 		callback(form, resu);
 		return resu;
