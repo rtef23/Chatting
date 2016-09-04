@@ -1,4 +1,4 @@
-exports.is_ext_mem = function (form){
+exports.is_ext_mem = function (form, callback){
 	//check that there is member whose info matches in DB
 	/*
 	return	true : if there is matched member
@@ -6,21 +6,27 @@ exports.is_ext_mem = function (form){
 	*/
 	var conn = getConn();
 	var id = form.id;
-	var pass = form.pass;
-	var query = "select count(id) from member where id = '" + id + "', pass = '" + pass + "'";
+	var pass = form.password;
 
 	console.log("id : " + id);
 	console.log("pass : " + pass);
-	if(conn == null)
+	if(conn == null){
+		callback(form, false);
 		return false;
-	var result = Boolean(conn.query(query, function(err, rows){
-		if(err)
+	}
+	conn.query("select count(id) as cnt from member where id=? and password=?", [id, pass], function(err, rows){
+		if(err){
+			conn.end();
+			console.log(2);
+			callback(form, false);
 			return false;
-		return (rows.length > 0)?true:false;
-	}));
-	console.log("result : " + result);
-	conn.end();
-	return result;
+		}
+		conn.end();
+		console.log("rows : " + rows[0].cnt);
+		var resu = ((rows[0].cnt == 1)?true:false);
+		callback(form, resu);
+		return resu;
+	});
 }
 exports.is_ext_mem_id = function(form, callback){
 	/*
@@ -36,13 +42,13 @@ exports.is_ext_mem_id = function(form, callback){
 	var result;
 
 	if(conn == null){
-		callback(2);
+		callback(form, 2);
 		return 2;
 	}
 	conn.query("select id from member where id='" + id + "'", function(err, rows){
 		if(err){
 			conn.end();
-			callback(2);
+			callback(form, 2);
 			return 2;
 		}
 		var tmp_res;
@@ -51,7 +57,7 @@ exports.is_ext_mem_id = function(form, callback){
 		else
 			tmp_res = 1;
 		conn.end();
-		callback(tmp_res);
+		callback(form, tmp_res);
 		return tmp_res;
 	});
 }
@@ -70,18 +76,18 @@ exports.member_create = function(form, callback){
 	*/
 	var conn = getConn();
 	if(conn == null){
-		callback(1);
+		callback(form, 1);
 		return 1;
 	}
 	var q = conn.query("insert into member set ?", form, function(err, result){
 		if(err){
 			conn.end();
 			console.log("2");
-			callback(1);
+			callback(form, 1);
 			return 1;
 		}
 		conn.end();
-		callback(0);
+		callback(form, 0);
 		return 0;
 	});
 	console.log("query : " + q.sql);
