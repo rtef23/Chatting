@@ -43,21 +43,27 @@ module.exports = function(app){
 //################# POST ####################
 	//process member check request in post method
 	app.post('/member_check', function(req, res){
-		console.log(req.body);
-		member.is_ext_mem(req.body, function(result){
+		member.is_ext_mem(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
+			if(result){//if there is member
+				req.session.user_id = form.id;
+				res.end("collect member");
+			}else{//there is no member
+				res.end("fail to login");
+			}
+			
 			res.end(result.toString());
 		});
 	});
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
-		member.member_create(req.body, function(result){
+		member.member_create(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
 			res.end(result.toString());
 		});
 	});
 	app.post('/member_id_check', function(req, res){
-		member.is_ext_mem_id(req.body, function(result){
+		member.is_ext_mem_id(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
 			res.end(result.toString());
 		});
