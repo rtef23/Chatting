@@ -21,7 +21,7 @@ create table friend_list(
 create table mem_meta(
 	user_id char(30) not null,
 	last_login datetime,
-	isonline boolean,
+	isOnline boolean,
 	foreign key(user_id) references member(id) on delete cascade on update cascade
 );
 create table chat_room(
