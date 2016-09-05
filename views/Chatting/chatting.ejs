@@ -1,0 +1,43 @@
+<html>
+<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+	<style type="text/css">
+		div#col1{
+			width:15%;
+			float:left;
+			//background-color:yellow;
+		}
+		#col2{
+			width:70%;
+			float:left;
+			//background-color:red;
+		}
+		#col3{
+			width:15%;
+			float:left;
+			//background-color:blue;
+		}
+	</style>
+	<head>
+		<title>welcome to chatting Mr/Mrs. <%= id %></title>
+	</head>
+	<body>
+		<div id="div_table">
+			<% if(id){ %>
+				<% include ../client/user_tab %>
+			<% }else{
+				window.location.replace("/");
+			} %>
+			<div class="row_main">
+				<div id="col1">
+					<% include ./room_list %>
+				</div>
+				<div id="col2">
+					<% include ./chatting_main %>					
+				</div>
+				<div id="col3">
+					<% include ../client/friend_list %>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

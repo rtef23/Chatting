@@ -1,3 +1,27 @@
+exports.getUserInfo = function(form, callback){
+	/*
+		return 
+			data : if there is user
+			empty string(\0) : if there is no user, or error
+	*/
+	var conn = getConn();
+	var id = form.id;
+
+	if(conn == null){
+		callback(form, '\0');
+		return '\0';
+	}
+	conn.query("select id, nickname, name from member where id=?", [id], function(err, rows){
+		if(err){
+			conn.end();
+			callback(form, '\0');
+			return '\0';
+		}
+		conn.end();
+		callback(form, rows[0]);
+		return rows[0];
+	});
+}
 exports.is_ext_mem = function (form, callback){
 	//check that there is member whose info matches in DB
 	/*
@@ -15,8 +39,8 @@ exports.is_ext_mem = function (form, callback){
 	conn.query("select count(id) as cnt from member where id=? and password=?", [id, pass], function(err, rows){
 		if(err){
 			conn.end();
-			console.log(2);
 			callback(form, false);
+			console.log(err);
 			return false;
 		}
 		conn.end();

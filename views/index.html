@@ -8,7 +8,7 @@
   <body>
   	<center>
   		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 500 height = 400></img>
-	  	<form name = "login_info" method = "POST">
+	  	<form name="login_info" method="POST" action="/signin">
 	  		<p>
 	  		<B>ID : </B>
 	  		<input type = 'text' name = 'id'></input>
@@ -17,9 +17,9 @@
 	  		<B>Password : </B>
 	  		<input type = 'password' name = 'pass'></input>
 	  		</p>
-			<button type = 'button' onclick = "javascript:page_link('join');">Create Account</button>
-	  		<button type = 'button' onclick = "javascript:page_link('signin');">Sign in</button>
-	  		<button type = 'button' onclick = "javascript:page_link('findac');">Find Account</button>
+			<button type = 'button' id="create">Create Account</button>
+	  		<button type = 'button' id="signin">Sign in</button>
+	  		<button type = 'button' id="findac">Find Account</button>
 	  	</form>
 	</center>
 	<script text = "text/javascript">
@@ -36,28 +36,31 @@
 			return true;
 		}
 
-	    function page_link(str_desti){
-	    	switch(str_desti){
-	    		case "signin":
-	    			if(form_check()){
-	    				$.post('./member_check',
-	    					{
-	    						id : $('input[name=id]').val(),
-	    						password : $('input[name=pass]').val()
-		    				},
-	    					function(data){
-	    						alert("data : " + data);
-	    					});
-	    			}
-	    			break;
-	    		case "join":
-	    			window.open("./member_create", "", "width = 300, height = 300, resizable=0");
-	    			break;
-	    		case "findac":
-	    			alert("find account");
-	    			break;
-	    	}
-	    }
+		$(function(){
+			$('#create').click(function(){
+				window.open("./member_create", "", "width = 300, height = 300, resizable=false");
+			});
+			$('#signin').click(function(){
+				if(form_check()){
+					$.post('/signin',
+					{
+						id : $('input[name=id]').val(),
+						password : $('input[name=pass]').val()
+					},
+						function(data){
+							var t = JSON.parse(data);
+							if(t){
+								window.location.replace("/chatting");
+							}else{
+								alert("서버에 접속할 수 없습니다.");
+							}
+						});
+					}
+			});
+			$('#findac').click(function(){
+				alert("find account");
+			});
+		});
 	</script>
   </body>
 </html>
