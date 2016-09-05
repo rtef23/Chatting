@@ -2,39 +2,7 @@
 	<head>
 		<title>Chatting</title>
 		<link rel="stylesheet" type="text/css" href="css/style.css">
-		<script text = "text/javascript">
-			function form_check(){
-				if(document.login_info.id_input.value == ''){
-					alert("ID를 체크하세요.");
-					document.login_info.id_input.focus();
-					return false;
-				}else if(document.login_info.pass_input.value == ''){
-					alert("Pass Word를 체크하세요.");
-					document.login_info.pass_input.focus();
-					return false;
-				}
-				return true;
-			}
-
-		    function page_link(str_desti){
-		    	switch(str_desti){
-		    		case "signin":
-		    			if(form_check()){
-		    				document.login_info.action = "./member_check";
-		    				document.login_info.submit();
-		    			}else{
-
-		    			}
-		    			break;
-		    		case "join":
-		    			alert("join");
-		    			break;
-		    		case "findac":
-		    			alert("find account");
-		    			break;
-		    	}
-		    }
-		</script>
+		<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
 	</head>
 
   <body>
@@ -43,16 +11,53 @@
 	  	<form name = "login_info" method = "POST">
 	  		<p>
 	  		<B>ID : </B>
-	  		<input type = 'text' name = 'id_input'></input>
+	  		<input type = 'text' name = 'id'></input>
 	  		</p>
 	  		<p>
 	  		<B>Password : </B>
-	  		<input type = 'password' name = 'pass_input'></input>
+	  		<input type = 'password' name = 'pass'></input>
 	  		</p>
 			<button type = 'button' onclick = "javascript:page_link('join');">Create Account</button>
 	  		<button type = 'button' onclick = "javascript:page_link('signin');">Sign in</button>
 	  		<button type = 'button' onclick = "javascript:page_link('findac');">Find Account</button>
 	  	</form>
 	</center>
+	<script text = "text/javascript">
+		function form_check(){
+			if($('input[name=id]').val() == ''){
+				alert("ID를 체크하세요.");
+				document.login_info.id.focus();
+				return false;
+			}else if($('input[name=password]').val() == ''){
+				alert("Pass Word를 체크하세요.");
+				document.login_info.password.focus();
+				return false;
+			}
+			return true;
+		}
+
+	    function page_link(str_desti){
+	    	switch(str_desti){
+	    		case "signin":
+	    			if(form_check()){
+	    				$.post('./member_check',
+	    					{
+	    						id : $('input[name=id]').val(),
+	    						password : $('input[name=pass]').val()
+		    				},
+	    					function(data){
+	    						alert("data : " + data);
+	    					});
+	    			}
+	    			break;
+	    		case "join":
+	    			window.open("./member_create", "", "width = 300, height = 300, resizable=0");
+	    			break;
+	    		case "findac":
+	    			alert("find account");
+	    			break;
+	    	}
+	    }
+	</script>
   </body>
 </html>
