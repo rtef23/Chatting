@@ -14,8 +14,9 @@ var server = app.listen(port,
 );
 
 app.use(express.static('public'));
-app.use(session({
-	secret : 'chatting',
+app.use(session({//using redis or mongoDB store session info, not implemented
+	key : 'sessionkey',
+	secret : 'MysIGn#@!%!@%^',
 	resave : false,
 	saveUninitialized : true
 }));

@@ -8,7 +8,10 @@ module.exports = function(app){
 	app.use(bodyParser.urlencoded({
 		extended : true
 	}));//to support url encoded body
-	//bind between url and file
+
+	//act by url
+//################# Chatting ####################
+
 
 //################## GET #####################
 	//base
@@ -36,25 +39,48 @@ module.exports = function(app){
 			});
 		});
 	//show create member window
-	app.get("/member_create", function(req, res){
+	app.get('/member_create', function(req, res){
 		res.render("client/createMem.html");
 	});
 
+	//rendering user tab
+	app.get('/user_tab', function(req, res){
+		res.render("client/user_tab");
+	});
+
+	//rendering chatting
+	app.get('/chatting', function(req, res){
+		if(!req.session.user_id)
+			return;
+		res.render("Chatting/chatting", {id : req.session.user_id});
+	});
+
+	app.get('/member_info', function(req, res){
+		if(!req.session.user_id)
+			return;
+		res.render("client/user_info");
+	});
 //################# POST ####################
-	//process member check request in post method
-	app.post('/member_check', function(req, res){
+	//login
+	app.post('/signin', function(req, res){
 		member.is_ext_mem(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
 			if(result){//if there is member
 				req.session.user_id = form.id;
-				res.end("collect member");
 			}else{//there is no member
-				res.end("fail to login");
+
 			}
 			
 			res.end(result.toString());
 		});
 	});
+
+	//logout
+	app.post('/signout', function(req, res){
+		req.session.destroy();
+		res.clearCookie('sessionkey');
+	});
+
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
 		member.member_create(req.body, function(form, result){
@@ -62,10 +88,21 @@ module.exports = function(app){
 			res.end(result.toString());
 		});
 	});
+
+	//return there is id in DB
 	app.post('/member_id_check', function(req, res){
 		member.is_ext_mem_id(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
 			res.end(result.toString());
+		});
+	});
+
+	//return user data
+	app.post('/member_info', function(req, res){
+		if(!req.session.user_id)
+			return;
+		member.getUserInfo(req.body, function(form, result){
+			res.end(JSON.stringify(result));
 		});
 	});
 }
