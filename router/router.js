@@ -12,7 +12,6 @@ module.exports = function(app){
 	//act by url
 //################# Chatting ####################
 
-
 //################## GET #####################
 	//base
 	app.get('/', 
@@ -58,7 +57,9 @@ module.exports = function(app){
 	app.get('/member_info', function(req, res){
 		if(!req.session.user_id)
 			return;
-		res.render("client/user_info");
+		member.getUserInfo({id : req.session.user_id}, function(form, result){
+			res.render("client/user_info", result);
+		});
 	});
 //################# POST ####################
 	//login
@@ -94,15 +95,6 @@ module.exports = function(app){
 		member.is_ext_mem_id(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
 			res.end(result.toString());
-		});
-	});
-
-	//return user data
-	app.post('/member_info', function(req, res){
-		if(!req.session.user_id)
-			return;
-		member.getUserInfo(req.body, function(form, result){
-			res.end(JSON.stringify(result));
 		});
 	});
 }
