@@ -1,16 +1,16 @@
+<style>
+	div
+	#user_info{
+		width:100%;
+		height:100%;
+		background-color:#e6f2ff;
+	}
+</style>
 <div id="user_info">
 	<form>	
-		<p><B>ID : </B><input id="user_id" type="text" /></p>
-		<p><B>Nick Name : </B><input id="user_nick" type="text" /></p>
-		<p><B>Name : </B><input id="user_name" type="text" /></p>
+		<p><B>ID : </B><input id="user_id" type="text" value='<%= id %>' /></p>
+		<p><B>Nick Name : </B><input id="user_nick" type="text" value='<%= nickname %>' /></p>
+		<p><B>Name : </B><input id="user_name" type="text" value='<%= name %>' /></p>
 		<input type="button" id="edit" value="edit" />
 	</form>
-	<script>
-		$.post('/member_info', {id : 'id1'}, function(data){
-			var data_json = JSON.parse(data);
-			$('input[id=user_id]').val(data_json.id);
-			$('input[id=user_nick]').val(data_json.nickname);
-			$('input[id=user_name]').val(data_json.name);
-		});
-	</script>
 </div>

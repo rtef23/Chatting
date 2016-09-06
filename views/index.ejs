@@ -1,0 +1,54 @@
+<html>
+	<head>
+		<title>Chatting</title>
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+	</head>
+
+  <body>
+  	<center>
+  		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 500 height = 400></img>
+	  	<form id="login_info">
+	  		<p>
+	  		<B>ID : </B>
+	  		<input type = 'text' name = 'id'></input>
+	  		</p>
+	  		<p>
+	  		<B>Password : </B>
+	  		<input type = 'password' name = 'pass'></input>
+	  		</p>
+			<input type = 'button' id="create" value="Create Account" />
+	  		<input type = 'submit' id="signin" value="Sign in" />
+	  		<input type = 'button' id="findac" value="Find Account" />
+	  	</form>
+	</center>
+	<script text = "text/javascript">
+		$(function(){
+			$('#create').click(function(){
+				window.open("./member_create", "", "width = 300, height = 300, resizable=false");
+			});
+
+			$('form#login_info').submit(function(data){
+				if($('input[name=id]').val() == ""){
+					alert("ID를 체크하세요.");
+					$('input[name=id]').focus();
+					return false;
+				}
+				if($('input[name=pass]').val() == ""){
+					alert("Pass Word를 체크하세요.");
+					$('input[name=pass]').focus();
+					return false;
+				}
+
+				$("<form id='send_form' action='/signin' method='POST'><input type='hidden' name='id' value='"+ $('input[name=id]').val()+"' />" + "<input type='hidden' name='password' value='" + $('input[name=pass]').val() + "' />").submit();
+
+				return false;
+			});
+
+			$('#findac').click(function(){
+				alert("find account");
+			});
+		});
+	</script>
+  </body>
+</html>

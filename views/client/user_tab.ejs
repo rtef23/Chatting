@@ -1,36 +1,64 @@
 <style>
-	div#row_user_info{
-		height:7%;
+	div
+	#row_user_info{
+		width:100%;
+		height:100%;
+		background-color:#cce5ff;
+	}
+	span
+	#left{
+		//width:50%;
+		//height:100%;
+		//background-color:red;
+		//text-align:left;
+		float:left;
+	}
+	#right{
+		//width:50%;
+		//height:100%;
 		//background-color:green;
-		text-align:right;
+		//text-align:right;
+		float:right;
 	}
 </style>
 
 <div id="row_user_info">
-	<right>
-	<span>
-		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 20 height = 20></img>
+	<p>
+	<span id="left">
+		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50 height = 50></img>
 	</span>
-	<span>
-		<B><%= id %></B>
-	</span>
-	<span>
+	<span id="right">
+		<a href="/chatting"><B><%= id %></B></a>
 		<input type="button" id="user_info" value="my info" />
-	</span>
-	<span>
 		<input type="button" id="logout" value="Sign out" />
 		<script>
 			$('img[id=logo]').click(function(){
-				window.location.replace('/chatting');
+				$(location).attr("href", "/chatting");
 			});
+
 			$('input[id=user_info]').click(function(){
-				$('div[id=col2]').load("/member_info");
+				$.ajax({
+					type : 'POST',
+					url : '/member_info',
+					success : function(res){
+						var res_data = JSON.parse(JSON.parse(res).result);
+
+						var new_col2 = 
+						"<style>div#user_info{width:100%;height:100%;background-color:#e6f2ff;}</style><div id='user_info'><form id='edit_user_form'><p><B>ID : " + res_data.id  + "</B></p><p><B>Nick Name : </B><input id='user_nick' type='text' value='" + res_data.nickname + "' /></p><p><B>Name : </B><input id='user_name' type='text' value='" + res_data.name + "' /></p><input type='submit' value='edit' /></form></div>";
+						
+						$('div[id=col2]').html(new_col2);
+					},
+					error : function(){
+						alert("ajax error");
+					}
+				});
 			});
+
 			$('#logout').click(function(){
 				$.post('/signout');
 				window.location.replace('/');
 			});
 		</script>
 	</span>
-	</right>
+	</p>
 </div>

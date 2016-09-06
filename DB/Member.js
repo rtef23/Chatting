@@ -49,39 +49,6 @@ exports.is_ext_mem = function (form, callback){
 		return resu;
 	});
 }
-exports.is_ext_mem_id = function(form, callback){
-	/*
-	check whether there is same id or not
-	callback for syncronous action
-	return 
-		0 : there is id in DB
-		1 : there is no id in DB
-		2 : error
-	*/
-	var id = form.id;
-	var conn = getConn();
-	var result;
-
-	if(conn == null){
-		callback(form, 2);
-		return 2;
-	}
-	conn.query("select id from member where id='" + id + "'", function(err, rows){
-		if(err){
-			conn.end();
-			callback(form, 2);
-			return 2;
-		}
-		var tmp_res;
-		if(rows.length > 0)
-			tmp_res = 0;
-		else
-			tmp_res = 1;
-		conn.end();
-		callback(form, tmp_res);
-		return tmp_res;
-	});
-}
 exports.member_create = function(form, callback){
 	/*
 	create member
@@ -93,25 +60,56 @@ exports.member_create = function(form, callback){
 		name : char(20)
 	return 
 		0 : success in creating member
-		1 : error 
+		1 : already exist member therefore creating member failed
+		2 : error
 	*/
 	var conn = getConn();
-	if(conn == null){
-		callback(form, 1);
-		return 1;
+	if(!conn){
+		callback(form, 2);
+		return 2;
 	}
-	var q = conn.query("insert into member set ?", form, function(err, result){
+	conn.query("select id from member where id = ?", [form.id], function(err, rows){
 		if(err){
 			conn.end();
-			console.log("2");
+			callback(form, 2);
+			console.error(err);
+			return 2;
+		}
+		console.log("row : " + JSON.stringify(rows));
+		console.log("row len : " + rows.length);
+		if(rows.length > 0){
+			//in case there is ID in DB
+			conn.end();
 			callback(form, 1);
 			return 1;
+		}else{
+			//in case there is no ID in DB
+			conn.end();
+			conn = getConn();
+			if(!conn){
+				callback(form, 2);
+				return 2;
+			}
+			conn.query("insert into member set ?", 
+				{
+					id : form.id,
+					password : form.password,
+					nickname : form.nickname,
+					name : form.name
+				}, function(err1, rows1){
+				if(err1){
+					conn.end();
+					callback(form, 2);
+					console.error(err1);
+					return 2;
+				}
+				conn.end();
+				callback(form, 0);
+				return 0;
+			});
 		}
-		conn.end();
-		callback(form, 0);
-		return 0;
+
 	});
-	console.log("query : " + q.sql);
 }
 function getConn(){
 	/*
