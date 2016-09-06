@@ -1,0 +1,89 @@
+<html>
+	<head><B>Create Account</B></head>
+	<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>
+	<body>
+		<form id="user_info" method="POST" >
+			<p><B>ID : </B><input type="text" name="id" /></p>
+			<p><B>Password : </B><input type="password" name="password" /></p>
+			<p><B>Password(Repeat) : </B><input type="password" name="password_repeat" /></p>
+			<p><B>NickName : </B><input type="text" name="nickname" /></p>
+			<p><B>Name : </B><input type="text" name="name" /></p>
+			<input type="submit" id="submit_btn" value="Create" />
+			<input type="button" onclick="javascript:window.close();" value="Cancel" />
+		</form>
+
+		<script>
+			$('#user_info').submit(function(){
+				function form_check(){
+					if($('input[name=id]').val() == ""){
+						alert("ID를 입력하세요.");
+						$('input[name=id]').focus();
+						return false;
+					}
+					if($('input[name=password]').val() == ""){
+						$('input[name=password]').focus();
+						alert("비밀번호를 입력하세요.");
+						return false;
+					}
+					if($('input[name=password_repeat]').val() == ""){
+						$('input[name=password_repeat]').focus();
+						alert("PASSWORD(Repeat)을 입력하세요.");
+						return false;
+					}
+					if($('input[name=password]').val() != $('input[name=password_repeat]').val()){
+						alert("PASSWORD와 PASSWORD(Repeat)이 일치 하지 않습니다.");
+						$('input[name=password]').val("");
+						$('input[name=password_repeat]').val("");
+						$('input[name=password]').focus();
+						return false;
+					}
+					if($('input[name=nickname]').val() == ""){
+						alert("Nick Name을 입력하세요.");
+						$('input[name=nickname]').focus();
+						return false;
+					}
+					if($('input[name=name]').val() == ""){
+						alert("Name을 입력하세요.");
+						$('input[name=name]').focus();
+						return false;
+					}
+
+					return true;
+				}
+				if(!form_check()){
+					return false;
+				}
+				$.ajax({
+					url : '/member_create',
+					method : 'POST',
+					data : {
+						id : $('input[name=id]').val(),
+						password : $('input[name=password]').val(),
+						nickname : $('input[name=nickname]').val(),
+						name : $('input[name=name]').val()
+					},
+					success : function(res_data){
+						var res_data_json = JSON.parse(res_data);
+						switch(Number(res_data_json.result)){
+							case 0:
+								alert("회원 가입에 성공하였습니다.");
+								window.open('about:blank', '_self').close();
+								break;
+							case 1:
+								alert("이미 존재하는 회원 ID입니다.");
+								$('input[name=id]').focus();
+								break;
+							case 2:
+								alert("서버에 에러가 발생하였습니다.\n잠시 후 다시 시도해 주세요.");
+								break;
+						}
+					},
+					error : function(xhr, status, error){
+						alert("error occured");
+					}
+				});
+				return false;
+			});
+		</script>
+	</body>
+</html>

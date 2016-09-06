@@ -1,1 +1,36 @@
-<h2>room_list.ejs</h2>
+<style>
+	ul.chat_log {
+		width:80%;
+		height:80%;
+	    background: #3399ff;
+	    padding: 20px;
+	}
+	div
+	#room_main{
+		width:100%;
+		height:100%;
+		background-color:#b3d7ff;
+	}
+	#room_list{
+		width:100%;
+		height:80%;
+	}
+	#interface_room{
+		width:100%;
+		height:20%;
+	}
+</style>
+<div id="room_main">
+	<div id="room_list">
+		<ul class="chat_log">
+		</ul>
+	</div>
+	<div id="interface_room">
+		<input type="button" id="add_room_btn" value="Add room" />
+	</div>
+</div>
+<script>
+	$('input[id=add_room_btn]').click(function(){
+		alert("add room button clicked" + <%= id %>);
+	});
+</script>

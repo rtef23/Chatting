@@ -1,8 +1,10 @@
 module.exports = function(app){
+	var chat_port = 3100;
 	var fs = require("fs");
 	var path = require("path");
 	var bodyParser = require("body-parser");
 	var member = require("../DB/Member");
+	var io = require("socket.io").listen(chat_port);
 
 	app.use(bodyParser.json());//to support json encoded body
 	app.use(bodyParser.urlencoded({
@@ -11,12 +13,13 @@ module.exports = function(app){
 
 	//act by url
 //################# Chatting ####################
+	console.log("chatting port : " + chat_port);
 
 //################## GET #####################
 	//base
 	app.get('/', 
 		function(req, res){
-			res.render('index.html');
+			res.render('index');
 		});
 
 	//process image request
@@ -37,42 +40,49 @@ module.exports = function(app){
 				res.end(data, "binary");
 			});
 		});
+
 	//show create member window
 	app.get('/member_create', function(req, res){
-		res.render("client/createMem.html");
+		res.render("client/create_member");
 	});
 
 	//rendering user tab
 	app.get('/user_tab', function(req, res){
-		res.render("client/user_tab");
+		res.render("client/user_tab", {id : req.session.user_id});
 	});
 
 	//rendering chatting
 	app.get('/chatting', function(req, res){
-		if(!req.session.user_id)
+		if(!req.session.user_id){
+			//when unpermitted user accessed in illegal way
+			req.session.destroy();
+			res.clearCookie('sessionkey');
+			res.writeHead(302, {"Content-Type" : "text/plain", "Location":"/"});
+			res.end();
 			return;
+		}
 		res.render("Chatting/chatting", {id : req.session.user_id});
 	});
 
-	app.get('/member_info', function(req, res){
-		if(!req.session.user_id)
-			return;
-		member.getUserInfo({id : req.session.user_id}, function(form, result){
-			res.render("client/user_info", result);
-		});
+	app.get('/chatting_main', function(req, res){
+		res.render("Chatting/chatting_main");
+	});
+
+	app.get('/login_fail', function(req, res){
+		res.render('client/login_fail');
 	});
 //################# POST ####################
 	//login
 	app.post('/signin', function(req, res){
 		member.is_ext_mem(req.body, function(form, result){
-			res.writeHead(200, {"Content-Type":"text/plain"});
 			if(result){//if there is member
 				req.session.user_id = form.id;
+				res.writeHead(302, {"Content-Type":"text/plain", "Location":"/chatting"});
+				res.end();
 			}else{//there is no member
-
+				res.writeHead(302, {"Content-Type":"text/plain", "Location":"/login_fail"});
+				res.end();
 			}
-			
-			res.end(result.toString());
 		});
 	});
 
@@ -86,15 +96,24 @@ module.exports = function(app){
 	app.post('/member_create', function(req, res){
 		member.member_create(req.body, function(form, result){
 			res.writeHead(200, {"Content-Type":"text/plain"});
-			res.end(result.toString());
+			res.end(JSON.stringify({result : result.toString()}));
 		});
 	});
 
-	//return there is id in DB
-	app.post('/member_id_check', function(req, res){
-		member.is_ext_mem_id(req.body, function(form, result){
-			res.writeHead(200, {"Content-Type":"text/plain"});
-			res.end(result.toString());
+	//if request is valid, then return user information
+	app.post('/member_info', function(req, res){
+		console.log("member_info");
+		if(!req.session.user_id){
+			//when unpermitted user accessed in illegal way
+			req.session.destroy();
+			res.clearCookie('sessionkey');
+			res.writeHead(302, {"Content-Type" : "text/plain", "Location":"/"});
+			res.end();
+			return;
+		}
+		member.getUserInfo({id : req.session.user_id}, function(form, result){
+			res.writeHead(200, {"Content-Type" : "text/plain"});
+			res.end(JSON.stringify({result : JSON.stringify(result)}));
 		});
 	});
 }
