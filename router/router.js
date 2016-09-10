@@ -4,7 +4,9 @@ module.exports = function(app){
 	var path = require("path");
 	var bodyParser = require("body-parser");
 	var member = require("../DB/Member");
-	var io = require("socket.io").listen(chat_port);
+	var sock_io = require("socket.io");
+	var io = sock_io.listen(chat_port);
+	var url = require("url");
 
 	app.use(bodyParser.json());//to support json encoded body
 	app.use(bodyParser.urlencoded({
@@ -12,10 +14,61 @@ module.exports = function(app){
 	}));//to support url encoded body
 
 	//act by url
+//################# EXTRA functions ####################
+	function on_session_fault_action(req, res){
+		//when unpermitted user accessed in illegal way
+		req.session.destroy();
+		res.clearCookie('sessionkey');
+		res.writeHead(302, {"Content-Type" : "text/plain", "Location":"/session_fault"});
+		res.end();
+		return;
+	}
 //################# Chatting ####################
-	console.log("chatting port : " + chat_port);
+	console.log("chatting server address : " + getChatProtocol() + "://" + getChatServerIPAddr() + ":" + getChatServerPort());
+	
+	function getChatProtocol(){
+		//return chatting server's protocol
+		return 'http';
+	}
 
+	function getChatServerIPAddr(){
+		return require('../server').getWebServerIP();
+	}
+
+	function getChatServerPort(){
+		return chat_port;
+	}
+
+	
 //################## GET #####################
+	//return socket.io.js file
+	app.get('/script/socket.io.js', function(req, res){
+		var file_path = '../node_modules/socket.io-client/socket.io.js';
+		var real_path = path.join(__dirname, file_path);
+
+		fs.readFile(real_path, function(err, data){
+			if(err){
+				res.writeHead(404, {"Content-Type" : "text/plain"});
+				res.end("404 not found");
+				return;
+			}
+			res.writeHead(200, {"Content-Type" : "text/javascript"});
+			res.end(data);
+		});
+	});
+
+	//return chatting server url with port number
+	app.get('/get_chat_url', function(req, res){
+		if(!req.session.user_id){
+			on_session_fault_action();
+			return;
+		}
+		var tmp_url = url.protocol + "//" + url.host;
+		var server_addr = getChatProtocol() + '://' + getServerIp() + ':' + chat_port;
+		res.writeHead(200, {"Content-Type" : "text/plain"});
+		res.end(server_addr);
+	});
+
 	//base
 	app.get('/', 
 		function(req, res){
@@ -48,22 +101,28 @@ module.exports = function(app){
 
 	//rendering user tab
 	app.get('/user_tab', function(req, res){
+		if(!req.session.user_id){
+			on_session_fault_action(req, res);
+			return;
+		}
 		res.render("client/user_tab", {id : req.session.user_id});
+	});
+
+	//rendering user_info
+	app.get('/user_info', function(req, res){
+		res.render("client/user_info", req.query);
 	});
 
 	//rendering chatting
 	app.get('/chatting', function(req, res){
 		if(!req.session.user_id){
-			//when unpermitted user accessed in illegal way
-			req.session.destroy();
-			res.clearCookie('sessionkey');
-			res.writeHead(302, {"Content-Type" : "text/plain", "Location":"/"});
-			res.end();
+			on_session_fault_action(req, res);
 			return;
 		}
 		res.render("Chatting/chatting", {id : req.session.user_id});
 	});
 
+	//rendering chatting_main
 	app.get('/chatting_main', function(req, res){
 		res.render("Chatting/chatting_main");
 	});
@@ -71,6 +130,11 @@ module.exports = function(app){
 	app.get('/login_fail', function(req, res){
 		res.render('client/login_fail');
 	});
+
+	app.get('/session_fault', function(req, res){
+		res.render('client/session_lost');
+	});
+
 //################# POST ####################
 	//login
 	app.post('/signin', function(req, res){
@@ -102,18 +166,25 @@ module.exports = function(app){
 
 	//if request is valid, then return user information
 	app.post('/member_info', function(req, res){
-		console.log("member_info");
 		if(!req.session.user_id){
-			//when unpermitted user accessed in illegal way
-			req.session.destroy();
-			res.clearCookie('sessionkey');
-			res.writeHead(302, {"Content-Type" : "text/plain", "Location":"/"});
-			res.end();
+			on_session_fault_action(req, res);
 			return;
 		}
 		member.getUserInfo({id : req.session.user_id}, function(form, result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
-			res.end(JSON.stringify({result : JSON.stringify(result)}));
+			res.end(JSON.stringify({result : result}));
 		});
 	});
+
+	//update user information
+	app.post('/member_update', function(req, res){
+		if(!req.session.user_id){
+			on_session_fault_action(req, res);
+			return;
+		}
+		member.member_update(req.body, function(form, result){
+			res.writeHead(200, {"Content-Type" : "text/plain"});
+			res.end(JSON.stringify({result : result.toString()}));
+		});
+	});	
 }

@@ -7,7 +7,7 @@ exports.getUserInfo = function(form, callback){
 	var conn = getConn();
 	var id = form.id;
 
-	if(conn == null){
+	if(!conn){
 		callback(form, '\0');
 		return '\0';
 	}
@@ -22,6 +22,80 @@ exports.getUserInfo = function(form, callback){
 		return rows[0];
 	});
 }
+
+exports.member_friend_list = function(form, callback){
+	/*
+	return friend list
+		{
+			result : 
+				true : when finding friend successes
+				false : failed in finding friend
+			data : {
+				id1,
+				id2,
+				and so on...
+			}
+		}
+	*/
+	var conn = getConn();
+	var id = form.id;
+	var result;
+	
+	if(!conn){
+		conn.end();
+		result = {result : false, data : {}}
+		callback(form, result);
+		return result;
+	}
+	conn.query(
+		"select f1_id as fid from friend_list where f2_id=? union select f2_id as fid from friend_list where f1_id=? order by fid", [id, id], function(err, rows){
+			if(err){
+				result = {result : false, data : {}}
+				conn.end();
+				callback(form, result);
+				console.log(err);
+				return result;
+			}
+			result = {
+				result : true,
+				data : rows
+			}
+			conn.end();
+			callback(form, result);
+			return result;
+		});
+}
+
+exports.member_update = function(form, callback){
+	/*
+		update user information
+		return 
+			true : if server successes in updating
+			false : error or if fails in updating 
+	*/
+	var conn = getConn();
+
+	if(!conn){
+		callback(form, false);
+		return false;
+	}
+
+	var id = form.id;
+	var nickname = form.nickname;
+	var name = form.name;
+	conn.query("update member set nickname=?, name=? where id=?", [nickname, name, id], function(err, rows){
+		if(err){
+			console.log(err);
+			conn.end();
+			callback(form, false);
+			return false;
+		}
+		conn.end();
+		callback(form, true);
+		return true;
+	});
+}
+
 exports.is_ext_mem = function (form, callback){
 	//check that there is member whose info matches in DB
 	/*
