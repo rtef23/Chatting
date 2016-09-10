@@ -12,10 +12,10 @@ create table member (
 	primary key(id)	
 );
 create table friend_list(
-	main_id char(30),
-	sub_id char(30),
-	foreign key(main_id) references member(id) on delete cascade on update cascade,
-	foreign key(sub_id) references member(id) on delete cascade on update cascade,
+	f1_id char(30),
+	f2_id char(30),
+	foreign key(f1_id) references member(id) on delete cascade on update cascade,
+	foreign key(f2_id) references member(id) on delete cascade on update cascade,
 	primary key(main_id, sub_id)
 );
 create table mem_meta(
