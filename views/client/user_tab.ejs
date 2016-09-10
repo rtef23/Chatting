@@ -25,13 +25,24 @@
 <div id="row_user_info">
 	<p>
 	<span id="left">
-		<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50 height = 50></img>
+		<a href="" onclick="javascript:render_chatting_main();">
+			<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50 height = 50></img>
+		</a>
 	</span>
 	<span id="right">
-		<a href="/chatting"><B><%= id %></B></a>
+		<a href="" onclick="javascript:render_chatting_main();"><B><%= id %></B></a>
 		<input type="button" id="user_info" value="my info" />
 		<input type="button" id="logout" value="Sign out" />
 		<script>
+			function render_chatting_main(){
+				$.ajax({
+					type : 'GET',
+					url : '/chatting_main',
+					success : function(res){
+						$('div[id=col2]').html(res);
+					}
+				});
+			}
 			$('img[id=logo]').click(function(){
 				$(location).attr("href", "/chatting");
 			});
@@ -41,12 +52,17 @@
 					type : 'POST',
 					url : '/member_info',
 					success : function(res){
-						var res_data = JSON.parse(JSON.parse(res).result);
+						var res_data = JSON.parse(res).result;
 
-						var new_col2 = 
-						"<style>div#user_info{width:100%;height:100%;background-color:#e6f2ff;}</style><div id='user_info'><form id='edit_user_form'><p><B>ID : " + res_data.id  + "</B></p><p><B>Nick Name : </B><input id='user_nick' type='text' value='" + res_data.nickname + "' /></p><p><B>Name : </B><input id='user_name' type='text' value='" + res_data.name + "' /></p><input type='submit' value='edit' /></form></div>";
-						
-						$('div[id=col2]').html(new_col2);
+						//for rendering
+						$.ajax({
+							url : '/user_info',
+							method : 'GET',
+							data : res_data,
+							success : function(res1){
+								$('div[id=col2]').html(res1);
+							}
+						});
 					},
 					error : function(){
 						alert("ajax error");

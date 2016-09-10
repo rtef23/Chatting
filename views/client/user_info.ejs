@@ -1,16 +1,48 @@
 <style>
-	div
-	#user_info{
+	div#user_info{
 		width:100%;
 		height:100%;
 		background-color:#e6f2ff;
 	}
 </style>
-<div id="user_info">
-	<form>	
-		<p><B>ID : </B><input id="user_id" type="text" value='<%= id %>' /></p>
-		<p><B>Nick Name : </B><input id="user_nick" type="text" value='<%= nickname %>' /></p>
-		<p><B>Name : </B><input id="user_name" type="text" value='<%= name %>' /></p>
-		<input type="button" id="edit" value="edit" />
-	</form>
+<div id='user_info'>
+<form id='edit_user_form'>
+	<p><B>ID : <%= id %> </B></p>
+	<p><B>Nick Name : </B><input id='edit_user_nick' type='text' value='<%= nickname %>' /></p>
+	<p><B>Name : </B><input id='edit_user_name' type='text' value='<%= name %>' /></p>
+	<input type='submit' value='edit' />
+	<input type='hidden' id='edit_user_id' value='<%= id %>' />
+</form>
 </div>
+<script>
+	$('#edit_user_form').submit(function(){
+		if($('#edit_user_nick').val() == ''){
+			alert('Nick Name을 입력하세요.');
+			$('#edit_user_nick').focus();
+			return false;
+		}
+		if($('#edit_user_name').val() == ''){
+			alert('Name을 입력하세요.');
+			$('#edit_user_name').focus();
+			return false;
+		}
+		$.ajax({
+			url : '/member_update',
+			method : 'POST',
+			data : {
+				id : $('#edit_user_id').val(),
+				nickname : $('#edit_user_nick').val(),
+				name : $('#edit_user_name').val()
+			},
+			success : function(res_data){
+				alert(JSON.parse(res_data).result);
+				if(JSON.parse(res_data).result == "true"){
+					alert("회원 정보 수정에 성공하였습니다.");
+				}else{
+					alert("회원 정보 수정에 실패 했습니다.");
+				}
+			}
+		});
+		return false;
+	});
+</script>
