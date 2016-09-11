@@ -3,7 +3,9 @@ module.exports = function(app){
 	var fs = require("fs");
 	var path = require("path");
 	var bodyParser = require("body-parser");
-	var member = require("../DB/Member");
+	var member = require("../DB/db_member");
+	var mem_meta = require("../DB/db_mem_meta");
+	var friend_list = require("../DB/db_friend_list");
 	var sock_io = require("socket.io");
 	var io = sock_io.listen(chat_port);
 	var url = require("url");
@@ -26,6 +28,18 @@ module.exports = function(app){
 //################# Chatting ####################
 	console.log("chatting server address : " + getChatProtocol() + "://" + getChatServerIPAddr() + ":" + getChatServerPort());
 	
+	io.on('connection', function(socket){
+		console.log("connection allowed");
+
+		socket.on('get_friend_list_with_status', function(msg){
+			console.log("msg : " + msg);
+			friend_list.get_friend_list({id : JSON.parse(msg).user_id}, function(form, result){
+
+				socket.emit('update_friend_list', JSON.stringify(result));
+			});
+		});
+	});
+
 	function getChatProtocol(){
 		//return chatting server's protocol
 		return 'http';
@@ -59,14 +73,30 @@ module.exports = function(app){
 
 	//return chatting server url with port number
 	app.get('/get_chat_url', function(req, res){
+		/*
+		output
+			{
+				result : 
+					0 : fail in connecting to chatting server
+					1 : success in connecting to chatting server
+				,chat_url : 
+					data1
+			}
+		*/
 		if(!req.session.user_id){
 			on_session_fault_action();
 			return;
 		}
 		var tmp_url = url.protocol + "//" + url.host;
-		var server_addr = getChatProtocol() + '://' + getServerIp() + ':' + chat_port;
+		var chat_addr = getChatProtocol() + '://' + getChatServerIPAddr() + ':' + getChatServerPort();
+		var result;
+
+		result = {
+			result : 1,
+			chat_url : chat_addr
+		};
 		res.writeHead(200, {"Content-Type" : "text/plain"});
-		res.end(server_addr);
+		res.end(JSON.stringify(result));
 	});
 
 	//base
@@ -128,24 +158,40 @@ module.exports = function(app){
 	});
 
 	app.get('/login_fail', function(req, res){
-		res.render('client/login_fail');
+		res.render('error_action/login_fail');
 	});
 
 	app.get('/session_fault', function(req, res){
-		res.render('client/session_lost');
+		res.render('error_action/session_lost');
 	});
 
+	app.get('/error_on_server', function(req, res){
+		res.render('error_action/error_on_server');
+	});
 //################# POST ####################
 	//login
 	app.post('/signin', function(req, res){
-		member.is_ext_mem(req.body, function(form, result){
-			if(result){//if there is member
-				req.session.user_id = form.id;
-				res.writeHead(302, {"Content-Type":"text/plain", "Location":"/chatting"});
-				res.end();
-			}else{//there is no member
-				res.writeHead(302, {"Content-Type":"text/plain", "Location":"/login_fail"});
-				res.end();
+		member.is_ext_mem(req.body, function(result){
+			switch(result.result){
+				case 0://if there is no member
+					{
+						res.writeHead(302, {"Content-Type":"text/plain", "Location":"/login_fail"});
+						res.end();
+					}
+					break;
+				case 1://there is member
+					{
+						req.session.user_id = req.body.id;
+						res.writeHead(302, {"Content-Type":"text/plain", "Location":"/chatting"});
+						res.end();
+					}
+					break;
+				case 2://error
+					{
+						res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/error_on_server'});
+						res.end();
+					}
+					break;
 			}
 		});
 	});
@@ -158,21 +204,85 @@ module.exports = function(app){
 
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
-		member.member_create(req.body, function(form, result){
-			res.writeHead(200, {"Content-Type":"text/plain"});
-			res.end(JSON.stringify({result : result.toString()}));
+		/*
+		output
+			{
+				result : 
+					0 : success in creating member
+					1 : already exist member
+					2 : error
+			}
+		*/
+		member.is_ext_id({id : req.body.id}, function(result1){
+			switch(result1.result){
+				case 0://if there is no id
+					{
+						member.member_create({
+							id : req.body.id,
+							password : req.body.password,
+							nickname : req.body.nickname,
+							name : req.body.name
+						}, function(result1){
+							switch(result1.result){
+								case 0://error
+									{
+										res.writeHead(200, {"Content-Type" : "text/plain"});
+										res.end(JSON.stringify({result : 2}));
+									}
+									break;
+								case 1://success in creating
+									{
+										console.log("correct act");
+										res.writeHead(200, {"Content-Type" : "text/plain"});
+										res.end(JSON.stringify({result : 0}));
+									}
+									break;
+							}
+						});
+					}
+					break;
+				case 1://if there is id
+					{
+						res.writeHead(200, {"Content-Type" : "text/plain"});
+						res.end(JSON.stringify({result : 1}));
+					}
+					break;
+				case 2://error
+					{
+						res.writeHead(200, {"Content-Type" : "text/plain"});
+						res.end(JSON.stringify({result : 2}));
+					}
+					break;
+			}
 		});
 	});
 
 	//if request is valid, then return user information
 	app.post('/member_info', function(req, res){
+		/*
+		input
+			{
+				id : data1
+			}
+		output
+			{
+				result : 
+					0 : error
+					1 : if success in get info
+				data : {
+					id : d1,
+					nickname : d2,
+					name : d3
+				}
+			}
+		*/
 		if(!req.session.user_id){
 			on_session_fault_action(req, res);
 			return;
 		}
-		member.getUserInfo({id : req.session.user_id}, function(form, result){
+		member.get_member_info({id : req.session.user_id}, function(result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
-			res.end(JSON.stringify({result : result}));
+			res.end(JSON.stringify(result));
 		});
 	});
 
@@ -182,9 +292,9 @@ module.exports = function(app){
 			on_session_fault_action(req, res);
 			return;
 		}
-		member.member_update(req.body, function(form, result){
+		member.member_update(req.body, function(result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
-			res.end(JSON.stringify({result : result.toString()}));
+			res.end(JSON.stringify(result));
 		});
 	});	
 }

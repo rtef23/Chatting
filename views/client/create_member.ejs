@@ -9,7 +9,7 @@
 			<p><B>NickName : </B><input type="text" name="nickname" /></p>
 			<p><B>Name : </B><input type="text" name="name" /></p>
 			<input type="submit" id="submit_btn" value="Create" />
-			<input type="button" onclick="javascript:window.close();" value="Cancel" />
+			<input type="button" onclick="javascript:window.open('about:blank', '_self').close();" value="Cancel" />
 		</form>
 
 		<script>
@@ -64,7 +64,7 @@
 					},
 					success : function(res_data){
 						var res_data_json = JSON.parse(res_data);
-						switch(Number(res_data_json.result)){
+						switch(res_data_json.result){
 							case 0:
 								alert("회원 가입에 성공하였습니다.");
 								window.open('about:blank', '_self').close();
@@ -77,9 +77,6 @@
 								alert("서버에 에러가 발생하였습니다.\n잠시 후 다시 시도해 주세요.");
 								break;
 						}
-					},
-					error : function(xhr, status, error){
-						alert("error occured");
 					}
 				});
 				return false;

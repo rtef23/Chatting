@@ -34,12 +34,19 @@
 				nickname : $('#edit_user_nick').val(),
 				name : $('#edit_user_name').val()
 			},
-			success : function(res_data){
-				alert(JSON.parse(res_data).result);
-				if(JSON.parse(res_data).result == "true"){
-					alert("회원 정보 수정에 성공하였습니다.");
-				}else{
-					alert("회원 정보 수정에 실패 했습니다.");
+			success : function(res){
+				var res_data = JSON.parse(res);
+				switch(res_data.result){
+					case 0:
+					{
+						alert("error\nplease try again");
+					}
+					break;
+					case 1:
+					{
+						alert("success in updating!!!");
+					}
+					break;
 				}
 			}
 		});

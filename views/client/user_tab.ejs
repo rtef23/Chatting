@@ -51,21 +51,28 @@
 				$.ajax({
 					type : 'POST',
 					url : '/member_info',
+					data : {id : '<%= id %>'},
 					success : function(res){
-						var res_data = JSON.parse(res).result;
-
-						//for rendering
-						$.ajax({
-							url : '/user_info',
-							method : 'GET',
-							data : res_data,
-							success : function(res1){
-								$('div[id=col2]').html(res1);
+						var res_data = JSON.parse(res);
+						switch(res_data.result){
+							case 0:
+							{
+								alert("error on server\ntry again");
 							}
-						});
-					},
-					error : function(){
-						alert("ajax error");
+							break;
+							case 1:
+							{
+								$.ajax({
+									type : 'GET',
+									url : '/user_info',
+									data : res_data.data,
+									success : function(res1){
+										$('div[id=col2]').html(res1);
+									}
+								});
+							}
+							break;
+						}
 					}
 				});
 			});
