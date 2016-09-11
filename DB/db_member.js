@@ -213,3 +213,39 @@ exports.member_create = function(form, callback){
 		return result;
 	});
 }
+
+exports.member_delete = function(form, callback){
+	/*
+	input
+	{
+		id : data1,
+		password : data2
+	}
+	output
+	{
+		result : 
+			0 : fail in delete member or error
+			1 : success in delete member
+	}
+	*/
+	var conn = db.getConn();
+	var result;
+
+	if(!conn){
+		result = {result : 2};
+		callback(result);
+		return result;
+	}
+	conn.query('delete from member where id=? and password=?',[form.id, form.password], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 2};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {result : 1};
+		callback(result);
+		return result;
+	});
+}

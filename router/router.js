@@ -32,11 +32,9 @@ module.exports = function(app){
 		console.log("connection allowed");
 
 		socket.on('get_friend_list_with_status', function(msg){
-			console.log("msg : " + msg);
-			friend_list.get_friend_list({id : JSON.parse(msg).user_id}, function(form, result){
+				console.log("msg : " + msg);
 
-				socket.emit('update_friend_list', JSON.stringify(result));
-			});
+				socket.emit('update_friend_list', JSON.stringify("result"));
 		});
 	});
 
@@ -181,9 +179,25 @@ module.exports = function(app){
 					break;
 				case 1://there is member
 					{
-						req.session.user_id = req.body.id;
-						res.writeHead(302, {"Content-Type":"text/plain", "Location":"/chatting"});
-						res.end();
+						mem_meta.member_meta_update_onLogin({
+							id : req.body.id
+						}, function(result){
+							switch(result.result){
+								case 0://fail in updating
+								{
+									res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/error_on_server'});
+									res.end();
+								}
+								break;
+								case 1://success in updating
+								{	
+									req.session.user_id = req.body.id;
+									res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/chatting'});
+									res.end();
+								}
+								break;
+							}
+						});
 					}
 					break;
 				case 2://error
@@ -198,8 +212,20 @@ module.exports = function(app){
 
 	//logout
 	app.post('/signout', function(req, res){
-		req.session.destroy();
-		res.clearCookie('sessionkey');
+		mem_meta.member_meta_update_onLogout({id : req.session.user_id}, function(result){
+			switch(result.result){
+				case 0://fail in logout, log this id
+				{//do logging
+				}
+				break;
+				case 1://success in logout
+				{//do nothing
+				}
+				break;
+			}
+			req.session.destroy();
+			res.clearCookie('sessionkey');
+		});
 	});
 
 	//process member create request in post method
@@ -232,9 +258,38 @@ module.exports = function(app){
 									break;
 								case 1://success in creating
 									{
-										console.log("correct act");
-										res.writeHead(200, {"Content-Type" : "text/plain"});
-										res.end(JSON.stringify({result : 0}));
+										mem_meta.member_meta_create({
+											id : req.body.id}, function(result2){
+												switch(result2.result){
+													case 0://fail in creating meta info
+													{
+														member.member_delete({
+															id : req.body.id,
+															password : req.body.password
+														}, function(result3){
+															switch(result3.result){
+																case 0://fail in delete member ==> log this id, password
+																{//logging
+																}
+																break;
+																case 1://success in delete member
+																{//do nothing
+																}
+																break;
+															}
+															res.writeHead(200, {"Content-Type" : "text/plain"});
+															res.end(JSON.stringify({result : 2}));
+														});
+													}
+													break;
+													case 1://success in creating meta info
+													{
+														res.writeHead(200, {"Content-Type" : "text/plain"});
+														res.end(JSON.stringify({result : 0}));
+													}
+													break;
+												}
+											});
 									}
 									break;
 							}

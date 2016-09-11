@@ -58,25 +58,27 @@
 			return '<%= id %>';
 		}
 
-		$.ajax({
-			url : '/get_chat_url',
-			method : 'GET',
-			success : function(res){
-				var res_data = JSON.parse(res);
-				switch(res_data.result){
-					case 0://fail in connecting
-					{
-						alert("can't connect to chatting server\nplease refresh your page");
+		$(document).ready(function(){
+			$.ajax({
+				url : '/get_chat_url',
+				method : 'GET',
+				success : function(res){
+					var res_data = JSON.parse(res);
+					switch(res_data.result){
+						case 0://fail in connecting
+						{
+							alert("can't connect to chatting server\nplease refresh your page");
+						}
+						break;
+						case 1://success in connecting
+						{
+							socket = io.connect(res_data.chat_url);
+							alert("success in connecting");
+						}
+						break;
 					}
-					break;
-					case 1://success in connecting
-					{
-						socket = io.connect(res_data.chat_url);
-						alert("success in connecting");
-					}
-					break;
 				}
-			}
+			});
 		});
 	</script>
 </html>
