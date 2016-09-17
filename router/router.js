@@ -28,13 +28,128 @@ module.exports = function(app){
 //################# Chatting ####################
 	console.log("chatting server address : " + getChatProtocol() + "://" + getChatServerIPAddr() + ":" + getChatServerPort());
 	
-	io.on('connection', function(socket){
-		console.log("connection allowed");
+	var clients = [];
+	var clients_ids = [];
 
-		socket.on('get_friend_list_with_status', function(msg){
-				console.log("msg : " + msg);
+	io.on('connect', function(socket){
+		console.log("connected");
 
-				socket.emit('update_friend_list', JSON.stringify("result"));
+		socket.on('whoami', function(){
+			if(!socket.user_id)
+				return;
+			socket.emit('youare', JSON.stringify({id : socket.user_id}));
+		});
+
+		socket.on('user_connect', function(msg){
+			var msg_data = JSON.parse(msg);
+			member.is_ext_mem({
+				id : msg_data.id,
+				password : msg_data.password
+			}, function(result1){
+				switch(result1.result){
+					case 0://no member
+					case 2://error
+						socket.emit('connect_result', JSON.stringify(result1));
+					return;
+					case 1://valid member
+					{
+						mem_meta.member_meta_isOnline({
+							id : msg_data.id
+						}, function(result2){
+							switch(result2.result){
+								case 0://not online member
+								break;
+								case 1://online member
+								socket.emit('connect_result', JSON.stringify({result : 0}));
+								return;
+								case 2://error
+								socket.emit('connect_result', JSON.stringify(result2));
+								return;
+							}
+							mem_meta.member_meta_update_onLogin({//update meta info
+								id : msg_data.id
+							},function(result3){
+								switch(result3.result){
+									case 0://fail
+										socket.emit('connect_result', JSON.stringify(result3));
+									return;
+									case 1://success
+										socket.emit('connect_result', JSON.stringify(result3));
+										clients[msg_data.id] = socket.id;
+										clients_ids[socket.id] = msg_data.id;
+										socket.user_id = msg_data.id;
+									break;
+								}
+								friend_list.get_friend_list_with_status({id : msg_data.id}, function(result2){
+									var sock = io.sockets.sockets[clients[msg_data.id]];
+									sock.emit('update_friend_list', JSON.stringify(result2));
+								});
+
+								friend_list.get_friend_list({id : msg_data.id}, function(result3){
+									switch(result3.result){
+										case 0://fail
+										break;
+										case 1://success
+										for(var i in result3.data){
+											if(typeof clients[result3.data[i].fid] != "undefined"){//check whether this member is online or not
+												process.nextTick((function(num){
+													return function(){
+														friend_list.get_friend_list_with_status({id : result3.data[num].fid}, function(result4){
+															var sock = io.sockets.sockets[clients[result3.data[num].fid]];
+															sock.emit('update_friend_list', JSON.stringify(result4));
+														});
+													}
+												})(i));
+											}
+										}
+										break;
+									}
+								});
+							});
+						});
+					}
+					break;
+				}
+			})
+		});
+		
+		socket.on('disconnect', function(){
+			console.log('disconnect ' + socket.user_id);
+			
+			mem_meta.member_meta_update_onLogout({id : socket.user_id}, function(result){
+				switch(result.result){
+					case 0://fail in logout, log this id
+					{//do logging
+					}
+					break;
+					case 1://success in logout
+					{//do nothing
+					}
+					break;
+				}
+			});
+
+			friend_list.get_friend_list({id : socket.user_id}, function(result3){
+				switch(result3.result){
+					case 0://fail
+					break;
+					case 1://success
+					for(var i in result3.data){
+						if(typeof clients[result3.data[i].fid] != "undefined"){//check whether this member is online or not
+							process.nextTick((function(num){
+								return function(){
+									friend_list.get_friend_list_with_status({id : result3.data[num].fid}, function(result4){
+										var sock = io.sockets.sockets[clients[result3.data[num].fid]];
+										sock.emit('update_friend_list', JSON.stringify(result4));
+									});
+								}
+							})(i));
+						}
+					}
+					break;
+				}
+			});
+			delete clients[socket.user_id];
 		});
 	});
 
@@ -81,10 +196,6 @@ module.exports = function(app){
 					data1
 			}
 		*/
-		if(!req.session.user_id){
-			on_session_fault_action();
-			return;
-		}
 		var tmp_url = url.protocol + "//" + url.host;
 		var chat_addr = getChatProtocol() + '://' + getChatServerIPAddr() + ':' + getChatServerPort();
 		var result;
@@ -100,7 +211,7 @@ module.exports = function(app){
 	//base
 	app.get('/', 
 		function(req, res){
-			res.render('index');
+			res.render('Chatting/chatting');
 		});
 
 	//process image request
@@ -128,12 +239,12 @@ module.exports = function(app){
 	});
 
 	//rendering user tab
-	app.get('/user_tab', function(req, res){
-		if(!req.session.user_id){
-			on_session_fault_action(req, res);
-			return;
-		}
-		res.render("client/user_tab", {id : req.session.user_id});
+	app.get('/user_tab_login', function(req, res){
+		res.render("client/user_tab_login", {id : req.session.user_id});
+	});
+
+	app.get('/user_tab_unlogin', function(req, res){
+		res.render('client/user_tab_unlogin');
 	});
 
 	//rendering user_info
@@ -143,11 +254,7 @@ module.exports = function(app){
 
 	//rendering chatting
 	app.get('/chatting', function(req, res){
-		if(!req.session.user_id){
-			on_session_fault_action(req, res);
-			return;
-		}
-		res.render("Chatting/chatting", {id : req.session.user_id});
+		res.render("Chatting/chatting");
 	});
 
 	//rendering chatting_main
@@ -167,67 +274,6 @@ module.exports = function(app){
 		res.render('error_action/error_on_server');
 	});
 //################# POST ####################
-	//login
-	app.post('/signin', function(req, res){
-		member.is_ext_mem(req.body, function(result){
-			switch(result.result){
-				case 0://if there is no member
-					{
-						res.writeHead(302, {"Content-Type":"text/plain", "Location":"/login_fail"});
-						res.end();
-					}
-					break;
-				case 1://there is member
-					{
-						mem_meta.member_meta_update_onLogin({
-							id : req.body.id
-						}, function(result){
-							switch(result.result){
-								case 0://fail in updating
-								{
-									res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/error_on_server'});
-									res.end();
-								}
-								break;
-								case 1://success in updating
-								{	
-									req.session.user_id = req.body.id;
-									res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/chatting'});
-									res.end();
-								}
-								break;
-							}
-						});
-					}
-					break;
-				case 2://error
-					{
-						res.writeHead(302, {"Content-Type":"text/javascript", "Location" : '/error_on_server'});
-						res.end();
-					}
-					break;
-			}
-		});
-	});
-
-	//logout
-	app.post('/signout', function(req, res){
-		mem_meta.member_meta_update_onLogout({id : req.session.user_id}, function(result){
-			switch(result.result){
-				case 0://fail in logout, log this id
-				{//do logging
-				}
-				break;
-				case 1://success in logout
-				{//do nothing
-				}
-				break;
-			}
-			req.session.destroy();
-			res.clearCookie('sessionkey');
-		});
-	});
-
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
 		/*
@@ -331,11 +377,7 @@ module.exports = function(app){
 				}
 			}
 		*/
-		if(!req.session.user_id){
-			on_session_fault_action(req, res);
-			return;
-		}
-		member.get_member_info({id : req.session.user_id}, function(result){
+		member.get_member_info({id : req.body.id}, function(result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
 			res.end(JSON.stringify(result));
 		});

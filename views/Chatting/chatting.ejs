@@ -32,13 +32,11 @@
 		}
 	</style>
 	<head>
-		<title>welcome <%= id %></title>
+		<title>welcome</title>
 	</head>
 	<body>
 		<div id="div_table">
 			<div id="upper">
-				<!--  user_tab is fixed page -->
-				<% include ../client/user_tab %>
 			</div>
 			<div class="row_main">
 				<div id="col1">
@@ -54,31 +52,27 @@
 		</div>
 	</body>
 	<script text="text/javascript">
-		function getUserID(){
-			return '<%= id %>';
-		}
-
-		$(document).ready(function(){
+		$(function(){
+			loadUnlogin();
+		});
+		var loadLogin = function(id){
 			$.ajax({
-				url : '/get_chat_url',
+				url : '/user_tab_login',
 				method : 'GET',
-				success : function(res){
-					var res_data = JSON.parse(res);
-					switch(res_data.result){
-						case 0://fail in connecting
-						{
-							alert("can't connect to chatting server\nplease refresh your page");
-						}
-						break;
-						case 1://success in connecting
-						{
-							socket = io.connect(res_data.chat_url);
-							alert("success in connecting");
-						}
-						break;
-					}
+				success : function(msg){
+					$('div[id=upper]').html(msg);
+					$('B[id=yourID]').text(id);
+				}
+			});	
+		}
+		var loadUnlogin = function(){
+			$.ajax({
+				url : '/user_tab_unlogin',
+				method : 'GET',
+				success : function(msg){
+					$('div[id=upper]').html(msg);
 				}
 			});
-		});
+		}
 	</script>
 </html>

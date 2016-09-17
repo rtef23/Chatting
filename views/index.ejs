@@ -40,7 +40,38 @@
 					return false;
 				}
 
-				$("<form id='send_form' action='/signin' method='POST'><input type='hidden' name='id' value='"+ $('input[name=id]').val()+"' />" + "<input type='hidden' name='password' value='" + $('input[name=pass]').val() + "' />").submit();
+				$.ajax({
+					url : '/signin',
+					method : 'POST',
+					data : {
+						id : $('input[name=id]').val(),
+						password : $('input[name=pass]').val()
+					},
+					success : function(res){
+						var res_data = JSON.parse(res);
+						switch(res_data.result){
+							case 0:
+							{
+								alert("존재하지 않는 회원입니다.\nID, PASSWORD를 확인하여 주세요");
+								$('input[name=id]').focus();
+							}
+							break;
+							case 1:
+							{
+								$(location).attr('href', '/chatting');
+							}
+							break;
+							case 2:
+							{
+								alert("서버에 에러가 발생하였습니다.\n잠시 후 다시 시도해 주세요.");
+							}
+							break;
+						}
+					},
+					error : function(){
+						alert("서버에 연결 할 수 없습니다.");
+					}
+				});
 
 				return false;
 			});

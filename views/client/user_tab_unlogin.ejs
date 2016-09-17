@@ -1,0 +1,115 @@
+<style>
+	div
+	#row_user_input{
+		width:100%;
+		height:100%;
+		background-color:#cce5ff;
+	}
+	span
+	#u_left{
+		float : left;
+	}
+	#u_right{
+		float : right;
+	}
+</style>
+
+<div id='row_user_input'>
+	<form id="login_info">
+		<span id='u_left'>
+			<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50 height = 50 />
+		</span>
+		<span id='u_right'>
+			
+				<p>
+				<B>ID : </B>
+				<input type = 'text' name = 'id'></input>
+				<B>Password : </B>
+				<input type = 'password' name = 'pass'></input>
+				</p>
+				<input type = 'button' id="create" value="Create Account" />
+				<input type = 'submit' id="signin" value="Sign in" />
+				<input type = 'button' id="findac" value="Find Account" />
+		</span>
+	</form>
+</div>
+<script text = "text/javascript">
+	$(function(){
+		$('#create').click(function(){
+			window.open("./member_create", "", "width = 300, height = 300, resizable=false");
+		});
+
+		$('form#login_info').submit(function(){
+			if($('input[name=id]').val() == ""){
+				alert("ID를 체크하세요.");
+				$('input[name=id]').focus();
+				return false;
+			}
+			if($('input[name=pass]').val() == ""){
+				alert("Pass Word를 체크하세요.");
+				$('input[name=pass]').focus();
+				return false;
+			}
+
+			$.ajax({
+				url : '/get_chat_url',
+				method : 'GET',
+				success : function(msg){
+					var msg_data = JSON.parse(msg);
+					switch(msg_data.result){
+						case 0:
+						alert('can\'t connect to chatting server\nplease try again');
+						return;
+						case 1:
+						break;
+					}
+					socket = io.connect(msg_data.chat_url);
+
+					socket.emit('user_connect', JSON.stringify({
+						id : $('input[name=id]').val(),
+						password : $('input[name=pass]').val()
+					}));
+
+					socket.on('connect_result', function(msg1){
+						alert('connect_result : ' + msg1);
+						var msg1_data = JSON.parse(msg1);
+						switch(msg1_data.result){
+							case 0://fail
+							{
+								alert('ID, Password를 확인하세요.');
+								$('input[name=id]').focus();
+							}
+							break;
+							case 1://success
+							{
+								socket.on('update_friend_list', function(msg2){
+									updateFriendList(JSON.parse(msg2));
+								});
+								socket.emit('whoami');
+								socket.on('youare', function(msg2){
+									var msg2_data = JSON.parse(msg2);
+									loadLogin(msg2_data.id);
+								});
+							}
+							break;
+							case 2://error
+							{
+								alert('서버에 에러가 발생했습니다.\n잠시후 다시 시도하세요.');
+							}
+							break;
+						}
+					});
+
+					
+				}
+			});
+
+			return false;
+		});
+
+		$('#findac').click(function(){
+			//alert("find account");
+			loadLogin();
+		});
+	});
+</script>

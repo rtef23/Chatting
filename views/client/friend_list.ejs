@@ -24,9 +24,23 @@
 		<input type="button" value="Add friend"/>
 	</div>
 </div>
-<script>
-socket.emit('get_friend_list_with_status', 'request friend_list');
-socket.on('update_friend_list', function(msg){
-	alert("msg : " + msg);
-});
+<script text="text/javascript">
+var updateFriendList = function(data){
+	switch(data.result){
+		case 0:
+			alert('can\'t get friend list\n please try again');
+			break;
+		case 1:
+		{
+			$('ul[id=friend_list]').empty();
+			for(var i in data.data){
+				if(data.data[i].isOnline == 1)
+					$('<li />').css('color', 'green').text(data.data[i].fid).appendTo('ul[id=friend_list]');
+				else
+					$('<li />').css('color', 'red').text(data.data[i].fid).appendTo('ul[id=friend_list]');
+			}
+		}
+			break;
+	}
+}
 </script>

@@ -2,6 +2,46 @@
 var db = require('./db');
 require('../Util/date');
 
+exports.member_meta_isOnline = function(form, callback){
+	/*
+	input : 
+		{
+			id : data1
+		}
+	output : 
+		{
+			result : 
+				0 : if not online member
+				1 : online user
+				2 : error
+		}
+	*/
+	var conn = db.getConn();
+	var result;
+
+	if(!conn){
+		result = {result : 2};
+		callback(result);
+		return result;
+	}
+	conn.query('select isOnline from mem_meta where user_id=?', [form.id], function(err, rows){
+		if(err){
+			result = {result : 2};
+			callback(result);
+			return result;
+		}
+		if(rows[0].isOnline == 1){
+			result = {result : 1};
+			callback(result);
+			return result;
+		}else{
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+	});
+}
+
 exports.member_meta_update_onLogin = function(form, callback){
 	/*
 		update member meta information
@@ -73,13 +113,19 @@ exports.member_meta_update_onLogout = function(form, callback){
 exports.member_meta_get = function(form, callback){
 	/*
 	return member meta information
+	input
+	{
+		id : data1
+	}
+	output
+	{
 		result : 
-			true : if there is member
-			false : if there is no member or error
+			1 : if there is member
+			0 : if there is no member or error
 		data  : {
 			isonline : 
-				true : if member is online
-				false : if member is not online
+				1 : if member is online
+				0 : if member is not online
 			,
 			lastlogin : 
 				datetime type
@@ -87,6 +133,7 @@ exports.member_meta_get = function(form, callback){
 			create_date : 
 				datetime type
 		}
+	}
 	*/
 	var conn = db.getConn();
 	var id = form.id;
@@ -94,19 +141,21 @@ exports.member_meta_get = function(form, callback){
 
 	if(!conn){
 		conn.end();
-		result = {result : false, data : {}};
-		callback(form, result);
+		result = {result : 0, data : {}};
+		callback(result);
 		return result;
 	}
 
 	conn.query("select * from mem_meta where id=?", [id], function(err, row){
 		if(err){
 			conn.end();
-			result = {result : false, data : {}};
-			callback(form, result);
+			result = {result : 0, data : {}};
+			callback(result);
 			return result;
 		}
-		result = {result : true, data : {isonline : row[0].isOnline, lastlogin : row[0].lastlogin}};
+		result = {result : 1, data : {isonline : row[0].isOnline, lastlogin : row[0].lastlogin}};
+		callback(result);
+		return result;
 	});
 }
 
