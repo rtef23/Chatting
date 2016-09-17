@@ -1,7 +1,9 @@
 <style>
 	div
 	#row_user_input{
-		width:100%;
+		margin-left:0.5%;
+		margin-right:0.5%;
+		width:99%;
 		height:100%;
 		background-color:#cce5ff;
 	}
@@ -17,29 +19,39 @@
 <div id='row_user_input'>
 	<form id="login_info">
 		<span id='u_left'>
-			<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50 height = 50 />
+			<img id = "logo" src = "/img?file_path='images/logo.jpg'" width = 50% height = 50% />
 		</span>
 		<span id='u_right'>
-			
 				<p>
 				<B>ID : </B>
-				<input type = 'text' name = 'id'></input>
+				<input type = 'text' name = 'id' class='form-control'></input>
 				<B>Password : </B>
-				<input type = 'password' name = 'pass'></input>
+				<input type = 'password' name = 'pass' class='form-control'></input>
 				</p>
-				<input type = 'button' id="create" value="Create Account" />
-				<input type = 'submit' id="signin" value="Sign in" />
-				<input type = 'button' id="findac" value="Find Account" />
+
+				<div class="btn-group" data-toggle="buttons">
+				  <label class="btn btn-primary">
+				    <input type="checkbox" name="options" id="create" autocomplete="off" unchecked> Create Account</input>
+				  </label>
+				  <label class="btn btn-primary">
+				    <input type="checkbox" name="options" id="submit" autocomplete="off" unchecked> Sign in
+				    </input>
+				  </label>
+				  <label class="btn btn-primary">
+				    <input type="checkbox" name="options" id="findac" autocomplete="off" unchecked> Find Account
+				    </input>
+				  </label>
+				</div>
 		</span>
 	</form>
 </div>
 <script text = "text/javascript">
 	$(function(){
-		$('#create').click(function(){
-			window.open("./member_create", "", "width = 300, height = 300, resizable=false");
+		$('input[id=create]').click(function(){
+			window.open('/member_create', "create_member" ,"width=350, height=400"); 
 		});
 
-		$('form#login_info').submit(function(){
+		$('#submit').click(function(){
 			if($('input[name=id]').val() == ""){
 				alert("ID를 체크하세요.");
 				$('input[name=id]').focus();
@@ -82,14 +94,7 @@
 							break;
 							case 1://success
 							{
-								socket.on('update_friend_list', function(msg2){
-									updateFriendList(JSON.parse(msg2));
-								});
-								socket.emit('whoami');
-								socket.on('youare', function(msg2){
-									var msg2_data = JSON.parse(msg2);
-									loadLogin(msg2_data.id);
-								});
+								loadLogin();
 							}
 							break;
 							case 2://error

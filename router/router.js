@@ -40,6 +40,15 @@ module.exports = function(app){
 			socket.emit('youare', JSON.stringify({id : socket.user_id}));
 		});
 
+		socket.on('req_friend_list', function(){
+			if(!socket.user_id)
+				return;
+			friend_list.get_friend_list_with_status({id : socket.user_id}, function(result2){
+				var sock = io.sockets.sockets[clients[socket.user_id]];
+				sock.emit('update_friend_list', JSON.stringify(result2));
+			});
+		});
+
 		socket.on('user_connect', function(msg){
 			var msg_data = JSON.parse(msg);
 			member.is_ext_mem({
@@ -80,10 +89,6 @@ module.exports = function(app){
 										socket.user_id = msg_data.id;
 									break;
 								}
-								friend_list.get_friend_list_with_status({id : msg_data.id}, function(result2){
-									var sock = io.sockets.sockets[clients[msg_data.id]];
-									sock.emit('update_friend_list', JSON.stringify(result2));
-								});
 
 								friend_list.get_friend_list({id : msg_data.id}, function(result3){
 									switch(result3.result){
@@ -238,9 +243,13 @@ module.exports = function(app){
 		res.render("client/create_member");
 	});
 
+	app.get('/friend_list', function(req, res){
+		res.render('client/friend_list');
+	});
+
 	//rendering user tab
 	app.get('/user_tab_login', function(req, res){
-		res.render("client/user_tab_login", {id : req.session.user_id});
+		res.render("client/user_tab_login");
 	});
 
 	app.get('/user_tab_unlogin', function(req, res){
@@ -249,7 +258,7 @@ module.exports = function(app){
 
 	//rendering user_info
 	app.get('/user_info', function(req, res){
-		res.render("client/user_info", req.query);
+		res.render("client/user_info");
 	});
 
 	//rendering chatting
@@ -257,9 +266,17 @@ module.exports = function(app){
 		res.render("Chatting/chatting");
 	});
 
+	app.get('/friend_card', function(req, res){
+		res.render('client/friend_card');
+	});
+
 	//rendering chatting_main
 	app.get('/chatting_main', function(req, res){
 		res.render("Chatting/chatting_main");
+	});
+
+	app.get('/room_list', function(req, res){
+		res.render('Chatting/room_list');
 	});
 
 	app.get('/login_fail', function(req, res){
@@ -385,10 +402,6 @@ module.exports = function(app){
 
 	//update user information
 	app.post('/member_update', function(req, res){
-		if(!req.session.user_id){
-			on_session_fault_action(req, res);
-			return;
-		}
 		member.member_update(req.body, function(result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
 			res.end(JSON.stringify(result));

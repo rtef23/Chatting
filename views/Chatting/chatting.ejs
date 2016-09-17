@@ -5,49 +5,26 @@
 		body{
 			background-color:#80bdff;
 		}
-
 		div
-		#upper{
+		#main{
 			width:100%;
-			height:10%;
-			//background-color:white;
-		}
-		#col1{
-			width:15%;
-			height:90%;
-			float:left;
-			//background-color:yellow;
-		}
-		#col2{
-			width:70%;
-			height:90%;
-			float:left;
-			//background-color:red;
-		}
-		#col3{
-			width:15%;
-			height:90%;
-			float:left;
-			//background-color:blue;
-		}
+			height:20%;
+		};
+		#div_table{
+			width:100%;
+			height:80%;
+		};
 	</style>
 	<head>
 		<title>welcome</title>
 	</head>
 	<body>
-		<div id="div_table">
-			<div id="upper">
+		<div class="main">
+		</div>
+		<div class="div_table">
+			<div class='col1'>
 			</div>
-			<div class="row_main">
-				<div id="col1">
-					<% include ./room_list %>
-				</div>
-				<div id="col2">
-					<% include ./chatting_main %>
-				</div>
-				<div id="col3">
-					<% include ../client/friend_list %>
-				</div>
+			<div class='col2'>
 			</div>
 		</div>
 	</body>
@@ -55,22 +32,35 @@
 		$(function(){
 			loadUnlogin();
 		});
-		var loadLogin = function(id){
+		var loadLogin = function(){
 			$.ajax({
 				url : '/user_tab_login',
 				method : 'GET',
 				success : function(msg){
-					$('div[id=upper]').html(msg);
-					$('B[id=yourID]').text(id);
+					$('div[class=main]').html(msg);
 				}
-			});	
+			});
+			$.ajax({
+				url : '/chatting_main',
+				method : 'GET',
+				success : function(msg){
+					$('div[class=col1]').html(msg);
+				}
+			});
+			$.ajax({
+				url : '/friend_list',
+				method : 'GET',
+				success : function(msg){
+					$('div[class=col2]').html(msg);
+				}
+			});
 		}
 		var loadUnlogin = function(){
 			$.ajax({
 				url : '/user_tab_unlogin',
 				method : 'GET',
 				success : function(msg){
-					$('div[id=upper]').html(msg);
+					$('div[class=main]').html(msg);
 				}
 			});
 		}
