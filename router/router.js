@@ -290,6 +290,12 @@ module.exports = function(app){
 	app.get('/error_on_server', function(req, res){
 		res.render('error_action/error_on_server');
 	});
+
+	app.get('/friend_info/', function(req, res){
+		var uri = req.url;
+		var query = url.parse(uri, true).query;
+		res.render('client/friend_card_info');
+	});
 //################# POST ####################
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
@@ -402,7 +408,22 @@ module.exports = function(app){
 
 	//update user information
 	app.post('/member_update', function(req, res){
-		member.member_update(req.body, function(result){
+	/*
+	input
+		{
+			id : data1,
+			password : data2,
+			nickname : data3,
+			name : data4
+		}
+	output
+		{
+			result : 
+				0 : error
+				1 : success
+		}
+	*/
+		member.member_info_update(req.body, function(result){
 			res.writeHead(200, {"Content-Type" : "text/plain"});
 			res.end(JSON.stringify(result));
 		});

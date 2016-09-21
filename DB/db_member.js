@@ -49,7 +49,7 @@ exports.get_member_info = function(form, callback){
 	});
 }
 
-exports.member_update = function(form, callback){
+exports.member_info_update = function(form, callback){
 	/*
 		update user information
 		input

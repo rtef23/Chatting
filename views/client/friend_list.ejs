@@ -19,7 +19,7 @@ div#friend_list_up_div{
 		</ul>
 	</div>
 	<div id="friend_interface">
-		<button type="button" id='addfriend' class="btn btn-default btn-sm">
+		<button type="button" id='addfriend' class="btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="left" data-content="this is data">
 			<span class="glyphicon glyphicon-plus"></span> Add Friend
 		</button>
 	</div>
@@ -58,7 +58,4 @@ var updateFriendList = function(data){
 			break;
 	}
 }
-$('button[id=addfriend]').click(function(){
-	
-});
 </script>
