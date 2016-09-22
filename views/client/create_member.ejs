@@ -6,58 +6,192 @@
   </head>
   <style>
     #main_body{
-      background-color:#cce5ff;
-    };
+      background-color:#3399ff;
+    }
     div
     #input_form{
       width:70%;
       float:right;
-    };
+    }
+    #panel_head{
+      background-color:#3399ff;
+      color:white;
+    }
+    #panel_body{
+      background-color:#cce5ff;
+    }
+    #interface{
+      background-color:#3399ff;
+    }
+    td#caption1{
+      background-color:#80bfff;
+      color:#0000dd;
+    }
+    td#caption2{
+      background-color:#4da6ff;
+      color:#0000aa;
+    }
+    button#create{
+      background-color:#0059b3;
+      color:white;
+    }
+    button#close{
+      background-color:#0059b3;
+      color:white;
+    }
   </style>
   <body id='main_body'>
-    <div>
+    <form id='input_form'>
+    <div class="panel panel-default" id='main_panel'>
+        <div class="panel-heading" id='panel_head'>
+          <B><h4><font style='color:#1aff1a;'><span class="glyphicon glyphicon-ok-circle"></span></font>
+            Create Account</h4></B>
+        </div>
+        <div class="panel-body" id='panel_body'>
+          <table class='table-hover table-bordered'>
+            <tr>
+              <td id='caption1'>
+                <B>
+                  ID
+                </B>
+              </td>
+              <td>
+                <input type='text' id='input_id' class='form-control' />
+              </td>
+            </tr>
+            <tr>
+              <td id='caption2'>
+                <B>
+                  PassWord
+                </B>
+              </td>
+              <td>
+                <input type='password' id='input_pass' class='form-control' />
+              </td>
+            </tr>
+            <tr>
+              <td id='caption1'>
+                <B>
+                  PassWord(Repeat)
+                </B>
+              </td>
+              <td>
+                <input type='password' id='input_pass_repeat' class='form-control' />
+              </td>
+            </tr>
+            <tr>
+              <td id='caption2'>
+                <B>
+                  Name
+                </B>
+              </td>
+              <td>
+                <input type='text' id='input_name' class='form-control' />
+              </td>
+            </tr>
+            <tr>
+              <td id='caption1'>
+                <B>
+                  NickName
+                </B>
+              </td>
+              <td>
+                <input type='text' id='input_nick' class='form-control' />
+              </td>
+            </tr>
+          </table>
+        </div>
     </div>
-    <div id='form_cont'>
-      <form id='input_form'>
-      <p>
-      <B>ID : </B>
-        <input type='text' id='input_id' class='form-control' />
-      </p>
-      <p>
-        <B>PassWord : </B>
-        <input type='password' id='input_pass' class='form-control' />
-      </p>
-      <p>
-        <B>PassWord(Repeat) : </B>
-        <input type='password' id='input_pass_repeat' class='form-control' />
-      </p>
-      <p>
-        <B>Name : </B>
-        <input type='text' id='input_pass' class='form-control' />
-      </p>
-      <p>
-        <B>NickName : </B>
-        <input type='text' id='input_pass' class='form-control' />
-      </p>
-      <p>
-        <button type='button' class="btn btn-default btn-sm" id='create'>
+    <div class="panel-body" id='interface'>
+        <button type='submit' class="btn btn-default btn-sm" id='create'>
           <span class="glyphicon glyphicon-ok-circle"></span>Create
         </button>
         <button type='button' class="btn btn-default btn-sm" id='close'>
           <span class="glyphicon glyphicon-remove-circle"></span>Close
         </button>
-      </p>
-      </form>
     </div>
+    </form>
   </body>
 <script>
 $(function(){
-  $('button[id=create]').click(function(){
-    
+  $('form[id=input_form]').submit(function(){
+    if(format_check()){
+      $.ajax({
+        url : '/member_create',
+        method : 'POST',
+        data : {
+          id : $('input[id=input_id]').val(),
+          password : $('input[id=input_pass]').val(),
+          nickname : $('input[id=input_nick]').val(),
+          name : $('input[id=input_name]').val()
+        },
+        success : function(msg){
+          var msg_data = JSON.parse(msg);
+          switch(msg_data.result){
+            case 0:
+            {
+              window.close();
+              break;
+            }
+            case 1:
+            {
+              alert('이미 존재하는 회원 ID입니다.');
+              $('input[id=input_id]').focus();
+              break;
+            }
+            case 2:
+            {
+              alert('서버에 에러가 발생하였습니다.\n잠시 후 다시 시도해 주세요.');
+              break;
+            }
+          }
+        }
+      });
+    }
+    return false;
   });
   $('button[id=close]').click(function(){
     window.close();
   });
+
+  var format_check = function(){
+    var target = $('input[id=input_id]');
+    if(target.val() == ''){
+      alert('please enter ID');
+      target.focus();
+      return false;
+    }
+    target = $('input[id=input_pass]');
+    if(target.val() == ''){
+      alert('please enter password');
+      target.focus();
+      return false;
+    }
+    target = $('input[id=input_pass_repeat]');
+    if(target.val() == ''){
+      alert('please enter password repeat');
+      target.focus();
+      return false;
+    }
+    if(target.val() != $('input[id=input_pass]').val()){
+      alert('check your password and password repeat');
+      target.focus();
+      return false;
+    }
+    target = $('input[id=input_name]');
+    if(target.val() == ''){
+      alert('please enter your name');
+      target.focus();
+      return false;
+    }
+    target = $('input[id=input_nick]');
+    if(target.val() == ''){
+      alert('please enter your nickname');
+      target.focus();
+      return false;
+    }
+    return true;
+  }
 });
 </script>
 </html>

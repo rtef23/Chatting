@@ -29,8 +29,8 @@
 </div>
 <script>
 	$(function(){
-		socket.emit('whoami');
-		socket.on('youare', function(msg){
+		socket.emit('client_request_ID');
+		socket.on('server_response_ID', function(msg){
 			var msg_data = JSON.parse(msg);
 			$.ajax({
 				url : '/member_info',

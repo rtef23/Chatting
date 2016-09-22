@@ -26,6 +26,11 @@ div#nav_tab{
 				Rooms
 			</a>
 		</li>
+		<li class='' id='nav_friend_requests'>
+			<a href='javascript:onFriendRequests();' id='friend_request_tab'>
+				Friend Requests&nbsp;
+			</a>
+		</li>
 		<li class='' id='signout'>
 			<a href='javascript:onSignOutClick();'>
 				Sign Out
@@ -36,16 +41,49 @@ div#nav_tab{
 
 <script text="text/javascript">
 $(function(){
-	socket.emit('whoami');
-	socket.on('youare', function(msg){
+	socket.off('server_response_ID');
+	socket.off('server_update_friendRequestNum');
+	socket.off('server_response_friendRequestNum');
+
+	socket.emit('client_request_ID');
+	socket.emit('client_request_friendRequestNum');
+
+	socket.on('server_response_ID', function(msg){
 		var msg_data = JSON.parse(msg);
 		$('a[id=yourID]').text(msg_data.id);
 	});
+
+	socket.on('server_update_friendRequestNum', function(){
+		socket.emit('client_request_friendRequestNum');
+	});
+
+	socket.on('server_response_friendRequestNum', function(msg){
+		var msg_data = JSON.parse(msg);
+		switch(msg_data.result){
+			case 0://fail
+			{
+				alert('서버에 에러가 발생하여 친구 요청을 받아올 수 없습니다.\n잠시 후 다시 시도해 주세요.');
+			}
+			break;
+			case 1://success
+			{
+				renderFriendRequst(msg_data.data);
+			}
+			break;
+		}
+	});
 });
+
+var renderFriendRequst = function(data){
+	var target = $('a[id=friend_request_tab]');
+	target.html('Friend Requests ' + '<span class="badge">' + data + '</span>');
+}
+
 var resetTab = function(){
 	$('li[id=nav_id]').attr('class', '');
 	$('li[id=nav_profile]').attr('class', '');
 	$('li[id=nav_rooms]').attr('class', '');
+	$('li[id=nav_friend_requests]').attr('class', '');
 	$('li[id=nav_signout]').attr('class', '');
 }
 var onIDClick = function(){
@@ -86,5 +124,16 @@ var onSignOutClick = function(){
 	$('li[id=nav_signout]').attr('class', 'active');
 	socket.emit('disconnect');
 	window.location.href='/'
+}
+var onFriendRequests = function(){
+	resetTab();
+	$('li[id=nav_friend_requests]').attr('class', 'active');
+	$.ajax({
+		url : '/friend_request_list',
+		method : 'GET',
+		success : function(msg){
+			$('div[class=col1]').html(msg);
+		}
+	});
 }
 </script>

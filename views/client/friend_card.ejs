@@ -1,13 +1,6 @@
 <h6>
 %symbol_glyph%
-<a id='%friend_id%'>
+<a id='%friend_id%' name='friend_info_href'>
 %friend_id%
 </a>
 </h6>
-
-<script text='text/javascript'>
-	$('a[id=%friend_id%]').click(function(){
-		window.open('/friend_info/?fid=%friend_id%', 'show friend info', 'width = 500, height = 400');
-		return false;
-	});
-</script>

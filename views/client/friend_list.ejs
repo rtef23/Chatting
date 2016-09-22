@@ -10,7 +10,10 @@ div#friend_interface{
 	height:20%;
 }
 div#friend_list_up_div{
-	height:80%;
+	height:60%;
+	margin-top:10%;
+	margin-bottom:10%;
+	overflow-y:scroll;
 }
 </style>
 <div class='friend_main' id="friend_main">
@@ -19,16 +22,119 @@ div#friend_list_up_div{
 		</ul>
 	</div>
 	<div id="friend_interface">
-		<button type="button" id='addfriend' class="btn btn-default btn-sm" data-container="body" data-toggle="popover" data-placement="left" data-content="this is data">
+		<input type='text' id='new_friend_id' class='form-control' value='new/delete friend id here' />
+		<button type="button" id='addfriend' class="btn btn-default btn-sm">
 			<span class="glyphicon glyphicon-plus"></span> Add Friend
+		</button>
+		<button type="button" id='removefriend' class="btn btn-default btn-sm">
+			<span class="glyphicon glyphicon-minus"></span> Remove Friend
 		</button>
 	</div>
 </div>
+
+
 <script text="text/javascript">
-socket.emit('req_friend_list');
-socket.on('update_friend_list', function(msg2){
-	updateFriendList(JSON.parse(msg2));
+$(function(){
+	socket.off('server_change_friendList');
+	socket.off('server_response_friendList');
+	socket.off('server_response_addFriendRequest');
+	socket.off('server_response_removeFriend');
+
+	socket.emit('client_request_friendList');
+
+	socket.on('server_change_friendList', function(){
+		socket.emit('client_request_friendList');
+	});
+
+	socket.on('server_response_friendList', function(msg){
+		updateFriendList(JSON.parse(msg));
+	});
+
+	socket.on('server_response_addFriendRequest', function(msg){
+		var msg_data = JSON.parse(msg);
+		switch(msg_data.result){
+			case 0://fail
+			{
+				alert('친구 요청에 실패 했습니다.\n추가하려는 친구 아이디를 확인해 주세요.');
+				$('input[id=new_friend_id]').focus();
+			}
+			break;
+			case 1://success, do nothing
+			break;
+			case 2://error
+			{
+				alert('서버에 에러가 발생하였습니다.\n잠시 후 다시 시도해주세요.');
+			}
+			break;
+		}
+	});
+
+	socket.on('server_response_removeFriend', function(msg){
+		var msg_data = JSON.parse(msg);
+		switch(msg_data){
+			case 0://fail
+			{
+				alert('친구 삭제에 실패 했습니다.\n잠시 후 다시 시도 해주세요.');
+			}
+			break;
+			case 1://success
+			{//do nothing
+			}
+			break;
+		}
+	});
+
+
+	$('button[id=addfriend]').off('click');
+	$('button[id=removefriend]').off('click');
+	$('input[id=new_friend_id]').off('focusin');
+	$('input[id=new_friend_id]').off('focusout');
+
+	$('button[id=addfriend]').on('click', function(){
+		if(format_check($('input[id=new_friend_id]').val())){
+			var new_friend_id = $('input[id=new_friend_id]').val();
+			socket.emit('client_add_friendRequest', JSON.stringify({
+				nfid : new_friend_id
+			}));
+			$('input[id=new_friend_id]').val('new/delete friend id here');
+		}else{
+			alert('추가할 친구 아이디를 입력해주세요.');
+			$('input[id=new_friend_id]').focus();
+		}
+	});
+	$('button[id=removefriend]').on('click', function(){
+		if(format_check($('input[id=new_friend_id]').val())){
+			var rem_friend_id = $('input[id=new_friend_id]').val();
+			socket.emit('client_remove_friend', JSON.stringify({
+				id : rem_friend_id
+			}));
+			$('input[id=new_friend_id]').val('new/delete friend id here');
+		}else{
+			alert('삭제할 친구 아이디를 입력해주세요.');
+			$('input[id=new_friend_id]').focus();
+		}
+	});
+
+	$('input[id=new_friend_id]').on('focusin', function(){
+		if($(this).val() == 'new/delete friend id here')
+			$(this).val('');
+	});
+
+	$('input[id=new_friend_id]').on('focusout', function(){
+		if(!format_check($(this).val()))
+			$(this).val("new/delete friend id here");
+	});
 });
+
+
+
+var format_check = function(data){
+	if(data.length == 0)
+		return false;
+	if(data == 'new/delete friend id here')
+		return false;
+	return true;
+}
 var updateFriendList = function(data){
 	switch(data.result){
 		case 0:
@@ -52,6 +158,12 @@ var updateFriendList = function(data){
 							cp_msg = cp_msg.replace(/%symbol_glyph%/gi, '<span class="label label-danger">Offline</span>');
 						$('<li />').attr('class', 'list-group-item').html(cp_msg).appendTo('ul[id=friend_list_up]');
 					}
+
+					$('a[name=friend_info_href]').off('click');
+					$('a[name=friend_info_href]').on('click', function(){
+						window.open('/friend_info/?fid=' + $(this).attr('id'), 'show friend info', 'width = 500, height = 400');
+						return false;
+					});
 				}
 			});
 		}

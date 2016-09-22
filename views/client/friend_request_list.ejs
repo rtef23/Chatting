@@ -1,0 +1,92 @@
+<style>
+	div#main_panel{
+		margin-left:0.5%;
+		margin-right:0.5%;
+		width:79%;
+		height:100%;
+		float:left;
+		background-color:#e6f2ff;
+		overflow-y:scroll;
+	}
+	div#item_panel{
+		height:100px;
+	}
+</style>
+
+<div id='main_panel'>
+	<ul class='list-group' id='friend_request_list'>
+	</ul>
+</div>
+
+<script>
+	$(function(){
+		socket.off('server_response_friendRequests');
+		socket.off('server_response_actionFriendRequest');
+
+		socket.emit('client_request_friendRequests');
+
+		socket.on('server_response_friendRequests', function(msg){
+			var msg_data = JSON.parse(msg);
+			switch(msg_data.result){
+				case 0://fail
+				{
+					alert('친구 요청 목록을 불러 올 수 없습니다.\n잠시 후 다시 시도해 주세요.');
+					break;
+				}
+				case 1:
+				{
+					render_friendRequests(msg_data.data);
+				}
+				break;
+			}
+		});
+		socket.on('server_response_actionFriendRequest', function(msg){
+			var msg_data = JSON.parse(msg);
+			switch(msg_data.result){
+				case 0://fail
+				{
+					alert(msg_data.from_id + ' 의 친구 요청을 수락/거절하는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+				}
+				break;
+				case 1://success
+				{
+					$('li[id=' + msg_data.from_id+ ']').remove();
+					socket.emit('client_request_friendRequestNum');
+					socket.emit('client_request_friendList');
+				}
+				break;
+			}
+		});
+	});
+
+	var render_friendRequests = function(data){
+		$('ul[id=friend_request_list]').empty();
+
+		$.ajax({
+			url : '/friend_request_card',
+			method : 'GET',
+			success : function(msg){
+				$('input[name=adder]').off('click');
+				$('input[name=deleter]').off('click');
+
+				for(var i in data){
+					var cp_msg = msg;
+					cp_msg = cp_msg.replace(/%from_id%/gi, data[i].from_id);
+					$('<li />').attr('class', 'list-group-item').attr('id', data[i].from_id).html(cp_msg).appendTo('ul[id=friend_request_list]');
+				}
+				$('input[name=adder]').on('click', function(){
+					socket.emit('client_action_onFriendRequest', JSON.stringify({
+						action : 'accept',
+						from_id : $(this).attr('id')
+					}));
+				});
+				$('input[name=deleter]').on('click', function(){
+					socket.emit('client_action_onFriendRequest', JSON.stringify({
+						action : 'reject',
+						from_id : $(this).attr('id')
+					}));
+				});
+			}
+		});
+	}
+</script>

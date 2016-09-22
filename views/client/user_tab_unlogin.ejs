@@ -48,7 +48,7 @@
 <script text = "text/javascript">
 	$(function(){
 		$('input[id=create]').click(function(){
-			window.open('/member_create', "create_member" ,"width=350, height=400"); 
+			window.open('/member_create', "create_member" ,"width=370, height=370"); 
 		});
 
 		$('#submit').click(function(){
@@ -76,20 +76,21 @@
 						break;
 					}
 					socket = io.connect(msg_data.chat_url);
+					socket.off('server_response_newUser');
 
-					socket.emit('user_connect', JSON.stringify({
+					socket.emit('client_request_newUser', JSON.stringify({
 						id : $('input[name=id]').val(),
 						password : $('input[name=pass]').val()
 					}));
 
-					socket.on('connect_result', function(msg1){
-						alert('connect_result : ' + msg1);
+					socket.on('server_response_newUser', function(msg1){
 						var msg1_data = JSON.parse(msg1);
 						switch(msg1_data.result){
 							case 0://fail
 							{
 								alert('ID, Password를 확인하세요.');
 								$('input[name=id]').focus();
+								socket.emit('disconnect');
 							}
 							break;
 							case 1://success
@@ -100,6 +101,7 @@
 							case 2://error
 							{
 								alert('서버에 에러가 발생했습니다.\n잠시후 다시 시도하세요.');
+								socket.emit('disconnect');
 							}
 							break;
 						}
@@ -113,8 +115,7 @@
 		});
 
 		$('#findac').click(function(){
-			//alert("find account");
-			loadLogin();
+			alert("find account");
 		});
 	});
 </script>
