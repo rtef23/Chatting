@@ -1,0 +1,111 @@
+<html>
+<head>
+	<% include ../Headers/header_default %>
+	<title>
+	</title>
+</head>
+<style>
+table#info_table{
+	width:100%;
+	height:80%;
+}
+div#main_panel{
+	width:100%;
+	height:80%;
+}
+</style>
+<body>
+	<div class="panel panel-default" id='main_panel'>
+		<div class="panel-heading">
+			<B>
+				<div id='friend_id'>
+				</div>
+			</B>
+		</div>
+		<div class="panel-body">
+			<table class='table-hover table-bordered table-striped' id='info_table'>
+				<thead>
+					<tr>
+						<td colspan=2>
+						<B>
+						Friend Information
+						</B>
+						</td>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><B>Name</B></td>
+						<td id='friend_name'>
+						</td>
+					</tr>
+					<tr>
+						<td><B>NickName</B></td>
+						<td id='friend_nick'>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class='panel-body'>
+			<center>
+			<button class="btn btn-default btn-sm">
+				Delete This friend
+			</button>
+			<button class="btn btn-default btn-sm" onclick="javascript:window.close();">
+				Close
+			</button>
+			</center>
+		</div>
+	</div>
+</body>
+<script text='text/javascript'>
+	$(function(){
+		$.ajax({
+			url : '/member_info',
+			method : 'POST',
+			data : {
+				id : getParameter(this.location, 'fid')
+			},
+			success : function(msg){
+				var msg_data = JSON.parse(msg);
+				switch(msg_data.result){
+					case 0:
+						alert('친구 정보를 불러올수 없습니다.');
+					case 1:
+						render_friend_info(msg_data.data);
+						break;
+				}
+			}
+		});
+	});
+
+	function render_friend_info(data){
+		/*
+		input
+			{
+				id : d1,
+				nickname : n2,
+				name : d3
+			}
+		*/
+		$('title').text("friend information about \'" + data.id + "\'");
+		$('div[id=friend_id]').html("<center>" + data.id + "</center>");
+		$('td[id=friend_nick]').html("<center>" + data.nickname + "</center>");
+		$('td[id=friend_name]').html("<center>" + data.name + "</center>");
+	}
+	
+	function getParameter(target_url, par_name){
+		var target_url_dec = decodeURIComponent(target_url);
+		var pars = target_url_dec.slice(target_url_dec.indexOf('?') + 1, target_url_dec.length).split('&');
+
+		for(var i in pars){
+			var par_na = pars[i].split('=')[0];
+			if(par_na.toLowerCase() == par_name.toLowerCase()){
+				return pars[i].split('=')[1];
+			}
+		}
+		return '';
+	}
+</script>
+</html>

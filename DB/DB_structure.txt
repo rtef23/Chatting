@@ -1,6 +1,8 @@
+drop table request_friend_list;
 drop table mem_meta;
 drop table friend_list;
 drop table chat_log;
+drop table room_meta;
 drop table chat_room;
 drop table member;
 
@@ -11,25 +13,39 @@ create table member (
 	name char(20) not null,
 	primary key(id)	
 );
+
 create table friend_list(
-	main_id char(30),
-	sub_id char(30),
-	foreign key(main_id) references member(id) on delete cascade on update cascade,
-	foreign key(sub_id) references member(id) on delete cascade on update cascade,
-	primary key(main_id, sub_id)
+	from_id char(30),
+	to_id char(30),
+	isFriend boolean default false,
+	foreign key(from_id) references member(id) on delete cascade on update cascade,
+	foreign key(to_id) references member(id) on delete cascade on update cascade,
+	primary key(from_id, to_id)
 );
+
 create table mem_meta(
 	user_id char(30) not null,
-	last_login datetime,
-	isOnline boolean,
+	last_login datetime default null,
+	create_date datetime not null,
+	isOnline boolean default false,
 	foreign key(user_id) references member(id) on delete cascade on update cascade
 );
+
 create table chat_room(
 	user_id char(30) not null,
 	room_id int(20) AUTO_INCREMENT,
+	isJoined boolean default false,
 	foreign key(user_id) references member(id) on delete cascade on update cascade,
 	primary key(room_id, user_id)
 );
+
+create table room_meta(
+	room_id int(20) not null,
+	room_title char(60),
+	foreign key(room_id) references chat_room(room_id) on delete cascade on update cascade,
+	primary key(room_id)
+);
+
 create table chat_log(
 	log_id int(255) AUTO_INCREMENT,
 	user_id char(30) not null,

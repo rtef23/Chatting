@@ -1,0 +1,115 @@
+<style>
+	div#friend_request_content{
+		height:80%;
+		margin-left:0.5%;
+		margin-right:0.5%;
+		width:79%;
+		float:left;
+	}
+	div#friend_request_head{
+		width:100%;
+		height:10%;
+		float:left;
+		//vertical-align:middle;
+		background-color:#99ccff;
+	}
+	div#friend_request_body{
+		width:100%;
+		height:90%;
+		float:left;
+		background-color:#e6f2ff;
+		overflow-y:scroll;
+	}
+	div#item_panel{
+		height:100px;
+	}
+	ul#friend_request_list{
+		background-color:#cce5ff;
+	}
+</style>
+<div id='friend_request_content'>
+	<div id='friend_request_head'>
+		<center>
+			<br>
+			<font id='friend_request_title' style='font-size:32px;color:#004d99;margin-top:5%;'>
+			<B><span class="glyphicon glyphicon-user"></span>&nbsp;Friend Requests</B>
+			</font>
+		</center>
+	</div>
+	<div id='friend_request_body'>
+		<ul class='list-group' id='friend_request_list'>
+		</ul>
+	</div>
+</div>
+<script>
+	$(function(){
+		socket.off('server_response_friendRequests');
+		socket.off('server_response_actionFriendRequest');
+
+		socket.emit('client_request_friendRequests');
+
+		socket.on('server_response_friendRequests', function(msg){
+			var msg_data = JSON.parse(msg);
+			switch(msg_data.result){
+				case 0://fail
+				{
+					alert('친구 요청 목록을 불러 올 수 없습니다.\n잠시 후 다시 시도해 주세요.');
+					break;
+				}
+				case 1:
+				{
+					render_friendRequests(msg_data.data);
+				}
+				break;
+			}
+		});
+		socket.on('server_response_actionFriendRequest', function(msg){
+			var msg_data = JSON.parse(msg);
+			switch(msg_data.result){
+				case 0://fail
+				{
+					alert(msg_data.from_id + ' 의 친구 요청을 수락/거절하는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+				}
+				break;
+				case 1://success
+				{
+					$('li[id=' + msg_data.from_id+ ']').remove();
+					socket.emit('client_request_friendRequestNum');
+					socket.emit('client_request_friendList');
+				}
+				break;
+			}
+		});
+	});
+
+	var render_friendRequests = function(data){
+		$('ul[id=friend_request_list]').empty();
+
+		$.ajax({
+			url : '/friend_request_card',
+			method : 'GET',
+			success : function(msg){
+				$('input[name=adder]').off('click');
+				$('input[name=deleter]').off('click');
+
+				for(var i in data){
+					var cp_msg = msg;
+					cp_msg = cp_msg.replace(/%from_id%/gi, data[i].from_id);
+					$('<li />').attr('class', 'list-group-item').attr('id', data[i].from_id).html(cp_msg).css('background-color','#e6f2ff').appendTo('ul[id=friend_request_list]');
+				}
+				$('input[name=adder]').on('click', function(){
+					socket.emit('client_action_onFriendRequest', JSON.stringify({
+						action : 'accept',
+						from_id : $(this).attr('id')
+					}));
+				});
+				$('input[name=deleter]').on('click', function(){
+					socket.emit('client_action_onFriendRequest', JSON.stringify({
+						action : 'reject',
+						from_id : $(this).attr('id')
+					}));
+				});
+			}
+		});
+	}
+</script>

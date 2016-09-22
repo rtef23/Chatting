@@ -1,36 +1,56 @@
 <style>
-	ul.chat_log {
-		width:80%;
+	div#room_list_main{
+		margin-left:0.5%;
+		margin-right:0.5%;
+		width:79%;
 		height:80%;
-	    background: #3399ff;
-	    padding: 20px;
+		float:left;
+		background-color:#e6f2ff;
 	}
-	div
-	#room_main{
+	div#room_list_head{
 		width:100%;
-		height:100%;
-		background-color:#b3d7ff;
+		height:10%;
+		float:left;
+		background-color:#99ccff;
 	}
-	#room_list{
+	div#room_list_body{
 		width:100%;
 		height:80%;
+		//margin-left:0.5%;
+		//margin-right:0.5%;
 	}
-	#interface_room{
-		width:100%;
-		height:20%;
+	div#room_list_interface{
+		width:99%;
+		height:10%;
+		margin-left:0.5%;
+		margin-right:0.5%;
 	}
 </style>
-<div id="room_main">
-	<div id="room_list">
-		<ul class="chat_log">
+
+<div class='room_list_main' id='room_list_main'>
+	<div id='room_list_head'>
+		<center>
+			<br>
+			<font id='friend_request_title' style='font-size:32px;color:#004d99;margin-top:5%;'>
+			<B><span class="glyphicon glyphicon-log-in"></span>&nbsp;&nbsp;Joined Rooms</B>
+			</font>
+		</center>
+	</div>
+	<div id='room_list_body'>
+		<ul id='room_list_up'>
 		</ul>
 	</div>
-	<div id="interface_room">
-		<input type="button" id="add_room_btn" value="Add room" />
+	<div id='room_list_interface'>
+		<button type="button" id='addroom' class="btn btn-default btn-sm">
+			<span class="glyphicon glyphicon-plus"></span> Add Room
+		</button>
 	</div>
 </div>
-<script>
-	$('input[id=add_room_btn]').click(function(){
-		alert("add room button clicked" + <%= id %>);
-	});
+<script text='text/javascript'>
+var renderRoomList = function(data){
+	
+}
+$('button[id=addroom]').click(function(){
+	
+});
 </script>

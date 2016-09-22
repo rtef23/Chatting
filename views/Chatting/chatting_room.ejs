@@ -11,9 +11,16 @@
 		</ul>
 	</div>
 	<p>
-		<input type="text" id="msg_txt" />
-		<input type="button" id="send_btn" value="Send" />
+		<form id="user_msg_form">
+			<input type="text" id="msg_txt" />
+			<input type="submit" id="send_btn" value="Send" />
+		</form>
 	</p>
 </div>
 <script>
+	$('#user_msg_form').submit(function(){
+		$user_msg = $('#msg_txt').val();
+		alert("message : " + $user_msg);
+		return false;
+	});
 </script>
