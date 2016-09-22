@@ -23,12 +23,20 @@ div#nav_tab{
 		</li>
 		<li class='' id='nav_rooms'>
 			<a href='javascript:onRoomsClick();'>
-				Rooms
+				Joined Rooms
+				<span class="badge" id='num_joined_room'>0</span>
+			</a>
+		</li>
+		<li class='' id='nav_room_requests'>
+			<a href='javascript:onRoomRequestsClick();'>
+				Room Invitation
+				<span class="badge" id='num_room_invitation'>0</span>
 			</a>
 		</li>
 		<li class='' id='nav_friend_requests'>
 			<a href='javascript:onFriendRequests();' id='friend_request_tab'>
 				Friend Requests&nbsp;
+				<span class="badge" id='num_friend_requests'>0</span>
 			</a>
 		</li>
 		<li class='' id='signout'>
@@ -75,8 +83,7 @@ $(function(){
 });
 
 var renderFriendRequst = function(data){
-	var target = $('a[id=friend_request_tab]');
-	target.html('Friend Requests ' + '<span class="badge">' + data + '</span>');
+	$('span[id=num_friend_requests]').text(data);
 }
 
 var resetTab = function(){
@@ -85,6 +92,7 @@ var resetTab = function(){
 	$('li[id=nav_rooms]').attr('class', '');
 	$('li[id=nav_friend_requests]').attr('class', '');
 	$('li[id=nav_signout]').attr('class', '');
+	$('li[id=nav_room_requests]').attr('class', '');
 }
 var onIDClick = function(){
 	resetTab();
@@ -130,6 +138,17 @@ var onFriendRequests = function(){
 	$('li[id=nav_friend_requests]').attr('class', 'active');
 	$.ajax({
 		url : '/friend_request_list',
+		method : 'GET',
+		success : function(msg){
+			$('div[class=col1]').html(msg);
+		}
+	});
+}
+var onRoomRequestsClick = function(){
+	resetTab();
+	$('li[id=nav_room_requests]').attr('class', 'active');
+	$.ajax({
+		url : '/room_invitation_list',
 		method : 'GET',
 		success : function(msg){
 			$('div[class=col1]').html(msg);

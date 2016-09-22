@@ -466,6 +466,10 @@ module.exports = function(app){
 		var query = url.parse(uri, true).query;
 		res.render('client/friend_card_info');
 	});
+
+	app.get('/room_invitation_list', function(req, res){
+		res.render('Chatting/room_request_list');
+	});
 //################# POST ####################
 	//process member create request in post method
 	app.post('/member_create', function(req, res){
