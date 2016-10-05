@@ -1,0 +1,78 @@
+<div class='panel-info' style='width:100%;height:100%;'>
+	<div class='panel-heading' style='width:100%;height:10%;background-color:#0066ff;text-align:center;'>
+		<font id='friend_request_title' style='font-size:32px;color:#cce6ff;margin-top:5%;'>
+			<B>
+				<span class="glyphicon glyphicon-link"></span>
+				&nbsp;Room Invitation
+			</B>
+		</font>
+	</div>
+	<div class='panel-body' style='width:100%;height:80%;background-color:#e6f2ff'>
+		<div id='room_inv_list' class='list-group' style='	width:99%;height:99%;overflow-y:scroll;margin:0.5%;background-color:white;'>
+		</div>
+	</div>
+	<div class='panel-footer' style='width:100%;height:10%;'>
+	</div>
+</div>
+
+<div id='room_inv_card_format' style='display:none;'>
+	<a class='list-group-item' name='%room_id%' style='background-color:%bgcolor%;'>
+		<div id='invite_card' style='height:5%;'>
+			<div style='float:left;text-align:left;color:#0047b3;'>
+				<span class='badge'>
+					from.
+				</span>
+				%from_nick%
+				<span class='badge'>
+					to.
+				</span>
+				%room_title%
+			</div>
+			<div style='float:right;text-align:right;'>
+				<input type='hidden' id='room-id' value='%room_id%'>
+				</input>
+				<button class='btn btn-success' onclick='javascript:roomInviteAccept($(this));'>
+					Accept
+				</button>
+				<button class='btn btn-danger' onclick='javascript:roomInviteReject($(this));'>
+					Reject
+				</button>
+			</div>
+		</div>
+	</a>
+</div>
+
+<script>
+var roomInviteAccept = function(object){
+
+};
+var roomInviteReject = function(object){
+
+};
+var addRoomInv = function(data){
+	var form = $('div[id=room_inv_card_format]').html();
+	form = form.replace(/%room_id%/gi, data.room_id);
+	form = form.replace(/%bgcolor%/gi, data.bgcolor);
+	form = form.replace(/%from_nick%/gi, data.from_nick);
+	form = form.replace(/%room_title%/gi, data.room_title);
+	$('div[id=room_inv_list]').append(form);
+};
+var renderRoomInvite = function(data){
+	for(var i in data){
+		if(i % 2 == 0){
+			data[i].bgcolor = '#cce6ff';
+		}else{
+			data[i].bgcolor = '#80b3ff';
+		}
+		addRoomInv(data[i]);
+	}
+};
+
+$(function(){
+	var ret = {
+		action : 'read'
+	};
+	socket.json.emit('client_roomInvite', ret);
+
+});
+</script>

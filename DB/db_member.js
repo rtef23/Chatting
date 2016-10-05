@@ -2,7 +2,7 @@
 var db = require('./db');
 var member = require('./db_member');
 
-exports.get_member_info = function(form, callback){
+exports.read_member = function(form, callback){
 	/*
 		input
 			{
@@ -24,6 +24,7 @@ exports.get_member_info = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0, data : {}};
 		callback(result);
 		return result;
@@ -49,7 +50,7 @@ exports.get_member_info = function(form, callback){
 	});
 }
 
-exports.member_info_update = function(form, callback){
+exports.update_member = function(form, callback){
 	/*
 		update user information
 		input
@@ -69,6 +70,7 @@ exports.member_info_update = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -110,6 +112,7 @@ exports.is_ext_mem = function (form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 2};
 		callback(result);
 		return result;
@@ -149,6 +152,7 @@ exports.is_ext_id = function(form, callback){
 	var id = form.id;
 
 	if(!conn){
+		conn.end();
 		result = {result : 2};
 		callback(result);
 		return result;
@@ -169,7 +173,7 @@ exports.is_ext_id = function(form, callback){
 		return result;
 	});
 }
-exports.member_create = function(form, callback){
+exports.create_member = function(form, callback){
 	/*
 	create member
 	input
@@ -214,7 +218,7 @@ exports.member_create = function(form, callback){
 	});
 }
 
-exports.member_delete = function(form, callback){
+exports.delete_member = function(form, callback){
 	/*
 	input
 	{
@@ -232,6 +236,7 @@ exports.member_delete = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 2};
 		callback(result);
 		return result;

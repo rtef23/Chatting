@@ -1,0 +1,121 @@
+<form class='form-inline' method='POST'>
+	<div class='form-group' style='float:left;width:5%;'>
+		<img id="logo" class='img-rounded' src="/img?file_name='logo.jpg'" style='width:75%;height:50%;'></img>
+	</div>
+	<div class='form-group' style='float:left;margin-left:1%;margin-right:1%;'>
+		<label for='input_id' style='color:white;'>
+			ID:
+		</label>
+		<input type='input' class='form-control' id='input_id' placeholder='ID here'>
+		</input>
+	</div>
+	<div class='form-group' style='float:left;'>
+		<label for='input_pass' style='color:white;'>
+			PASSWORD:
+		</label>
+		<input type='password' class='form-control' id='input_pass' placeholder='PASSWORD here'>
+		</input>
+	</div>
+	<div class='form-group' style='float:right;'>
+	    <button type="button" name="options" id="create" class='btn btn-primary'> Create Account</button>
+	    <button type="button" name="options" id="submit" class='btn btn-primary'> Sign in
+	    </button>
+	    <button type="button" name="options" id="findac" class='btn btn-primary'> Find Account
+		</button>
+	</div>
+</form>
+
+<script>
+$(function(){
+	var formCheck = function(data){
+		return true;
+	}
+	$('button[id=findac]').click(function(){
+		alert("find account");
+	});
+	$('button[id=create]').click(function(){
+		window.open('/create_member', "create_member" ,"width=370, height=370");
+	});
+	$('button[id=submit]').click(function(){
+		var data = {
+			id : $('input[id=input_id]').val(),
+			password : $('input[id=input_pass]').val()
+		};
+		
+		if(!formCheck(data))
+			return false;
+
+		if(chatting_server_address == ''){
+			getChattingServerAddr();
+			return false;
+		}
+
+		socket = io.connect(chatting_server_address);
+
+		socket.json.emit('client_connect', {
+			action : 'create',
+			value : {
+				id : data.id,
+				password : data.password
+			}
+		});
+
+		socket.on('server_connect', function(msg){
+			switch(msg.action){
+				case 'response':
+				{
+					switch(msg.value.call){
+						case 'c_connect':
+						{
+							switch(msg.value.result){
+								case 0://no member
+								{
+									alert('일치하는 회원이 없습니다.\n회원이 아니시라면 회원 가입 후 이용해 주세요.');
+								}
+								break;
+								case 1://exist member, not online
+								{
+									changeToLogin(data.id);
+								}
+								break;
+								case 2://exist member, online
+								{
+									alert('기존 접속을 종료하고 새로 연결하였습니다.');
+									changeToLogin(data.id);
+								}
+								break;
+								case 3://error
+								{
+									alert('서버에 에러가 발생했습니다.\n잠시 후 다시 시도해주세요.');
+								}
+								break;
+							}
+						}
+						break;
+					}
+					
+				}
+				break;
+				case 'delete':
+				{
+					switch(msg.value.call){
+						case 'invalid_connect':
+						{
+							alert('유효하지 않은 접근입니다.\n다시 접속해 주세요.');
+						}
+						break;
+						case 'new_connect':
+						{
+							alert('다른 곳에서 해당 아이디로 접속하여 해당 접속을 차단합니다.');
+						}
+						break;
+					}
+					document.location = '/chatting'
+				}
+			}
+		});
+
+		return false;
+	});
+});
+</script>

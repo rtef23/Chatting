@@ -26,10 +26,12 @@ exports.member_meta_isOnline = function(form, callback){
 	}
 	conn.query('select isOnline from mem_meta where user_id=?', [form.id], function(err, rows){
 		if(err){
+			conn.end();
 			result = {result : 2};
 			callback(result);
 			return result;
 		}
+		conn.end();
 		if(rows[0].isOnline == 1){
 			result = {result : 1};
 			callback(result);
@@ -42,7 +44,7 @@ exports.member_meta_isOnline = function(form, callback){
 	});
 }
 
-exports.member_meta_update_onLogin = function(form, callback){
+exports.update_memberMetaOnLogin = function(form, callback){
 	/*
 		update member meta information
 		input : 
@@ -72,12 +74,13 @@ exports.member_meta_update_onLogin = function(form, callback){
 			callback(form, result);
 			return result;
 		}
+		conn.end();
 		result = {result : 1};
 		callback(result);
 		return result;
 	});
 }
-exports.member_meta_update_onLogout = function(form, callback){
+exports.update_memberMetaOnLogout = function(form, callback){
 	/*
 	input
 	{
@@ -94,6 +97,7 @@ exports.member_meta_update_onLogout = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(form, result);
 		return result;
@@ -104,13 +108,14 @@ exports.member_meta_update_onLogout = function(form, callback){
 			result = {result : 0};
 			callback(result);
 		}
+		conn.end();
 		result = {result : 1};
 		callback(result);
 		return result;
 	});
 }
 
-exports.member_meta_get = function(form, callback){
+exports.read_detailMemberMeta = function(form, callback){
 	/*
 	return member meta information
 	input
@@ -123,15 +128,10 @@ exports.member_meta_get = function(form, callback){
 			1 : if there is member
 			0 : if there is no member or error
 		data  : {
-			isonline : 
-				1 : if member is online
-				0 : if member is not online
-			,
-			lastlogin : 
-				datetime type
-			,
-			create_date : 
-				datetime type
+			id : r1,
+			nickname : r2,
+			name : r3,
+			cdate : r4
 		}
 	}
 	*/
@@ -146,20 +146,30 @@ exports.member_meta_get = function(form, callback){
 		return result;
 	}
 
-	conn.query("select * from mem_meta where id=?", [id], function(err, row){
+	conn.query("select id, nickname, name, date_format(create_date, '%Y-%m-%d %H:%i:%s') as cdate from (select user_id as id, create_date from mem_meta where user_id=?) t1 natural join member", [id], function(err, rows){
 		if(err){
 			conn.end();
+			console.log(err);
 			result = {result : 0, data : {}};
 			callback(result);
 			return result;
 		}
-		result = {result : 1, data : {isonline : row[0].isOnline, lastlogin : row[0].lastlogin}};
+		conn.end();
+		result = {
+			result : 1,
+			data : {
+				id : rows[0].id,
+				nickname : rows[0].nickname,
+				name : rows[0].name,
+				cdate : rows[0].cdate
+			}
+		};
 		callback(result);
 		return result;
 	});
 }
 
-exports.member_meta_create = function(form, callback){
+exports.create_member_meta = function(form, callback){
 	/*
 	input
 	{
@@ -176,6 +186,7 @@ exports.member_meta_create = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -186,7 +197,6 @@ exports.member_meta_create = function(form, callback){
 		create_date : new Date().format('yyyy-MM-dd HH:mm:ss')
 	}, function(err, rows){
 		if(err){
-			console.error(err);
 			conn.end();
 			result = {result : 0};
 			callback(result);
