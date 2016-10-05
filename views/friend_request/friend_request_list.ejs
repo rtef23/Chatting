@@ -1,0 +1,132 @@
+<style>
+div#friend_request_panel{
+	width:100%;
+	height:100%;
+}
+div#friend_request_header{
+	width:100%;
+	height:10%;
+	background-color:#0066ff;
+	text-align:center;
+}
+div#friend_request_body{
+	width:100%;
+	height:80%;
+	background-color:#e6f2ff;
+}
+div.panel-footer{
+	width:100%;
+	height:10%;
+}
+div#friend_request_list{
+	width:99%;
+	height:99%;
+	overflow-y:scroll;
+	margin:0.5%;
+	background-color:white;
+}
+</style>
+
+<div id='friend_request_panel' class='panel-info'>
+	<div id='friend_request_header' class='panel-heading'>
+		<font id='friend_request_title' style='font-size:32px;color:#cce6ff;margin-top:5%;'>
+			<B>
+				<span class="glyphicon glyphicon-user"></span>
+				&nbsp;Friend Requests
+			</B>
+		</font>
+	</div>
+	<div id='friend_request_body' class='panel-body'>
+		<div class='list-group' id='friend_request_list'>
+		</div>
+	</div>
+	<div class='panel-footer'>
+	</div>
+</div>
+
+<div id='friend_request_card_format' style='display:none;'>
+	<a class='list-group-item' name='%from_id%' style='background-color:%bgcolor%;'>
+		<div id='request_card' style='height:5%;'>
+			<div style='float:left;text-align:left;color:#0047b3;'>
+				<span class='badge'>
+					from.
+				</span>
+				%from_nick%
+			</div>
+			<div style='float:right;text-align:right;'>
+				<input type='hidden' id='from-id' value='%from_id%'>
+				</input>
+				<button class='btn btn-success' onclick='javascript:friendRequestAccept($(this));'>
+					Accept
+				</button>
+				<button class='btn btn-danger' onclick='javascript:friendRequestReject($(this));'>
+					Reject
+				</button>
+			</div>
+		</div>
+	</a>
+</div>
+
+<script>
+var renderFriendRequests = function(data){
+	var target = $('div[id=friend_request_list]');
+	var ori_format = $('div[id=friend_request_card_format]').html();
+
+	target.empty();
+
+	for(var i in data){
+		format = ori_format;
+		if(i % 2 == 0)
+			format = format.replace(/%bgcolor%/gi, '#cce6ff');
+		else
+			format = format.replace(/%bgcolor%/gi, '#80b3ff');
+		format = format.replace(/%from_id%/gi, data[i].from_id);
+		format = format.replace(/%from_nick%/gi, data[i].from_nick);
+		target.append(format);
+	}
+};
+var createFriendRequest = function(data){
+	var target = $('div[id=friend_request_list]');
+	var format = $('div[id=friend_request_card_format]').html();
+	if(friend_request_count % 2 != 0)
+		format = format.replace(/%bgcolor%/gi, '#cce6ff');
+	else
+		format = format.replace(/%bgcolor%/gi, '#80b3ff');
+	format = format.replace(/%from_id%/gi, data.friend_id);
+	format = format.replace(/%from_nick%/gi, data.friend_nick);
+	target.append(format);
+};
+var friendRequestAccept = function(object){
+	var t_id = object.parent().children('#from-id').val();
+	var ret = {
+		action : 'update',
+		value : {
+			friend_id : t_id
+		}
+	};
+	socket.json.emit('client_friendRequest', ret);
+};
+var friendRequestReject = function(object){
+	var t_id = object.parent().children('#from-id').val();
+	var ret = {
+		action : 'delete',
+		value : {
+			friend_id : t_id
+		}
+	};
+	socket.json.emit('client_friendRequest', ret);
+};
+var deleteFriendRequest = function(friend_id){
+	$('a[name=' + friend_id + ']').remove();
+};
+
+$(function(){
+	{
+		var ret = {
+			action : 'read'
+		};
+		socket.json.emit('client_friendRequest', ret);	
+	}
+	
+});
+</script>

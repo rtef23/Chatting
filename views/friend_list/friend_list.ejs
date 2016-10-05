@@ -1,0 +1,158 @@
+<div class='container' id="friend_main" style='width:100%;height:100%;'>
+	<div id="friend_list_up_div" class='panel-group' style='width:100%;height:100%;'>
+
+		<div class="panel panel-default" id='online_panel' style='height:35%;width:100%;float:left;'>
+			<div class='panel-heading' id='online-header' style='background-color:#0066ff;color:white;'>
+				<h4 class='panel-title'>
+					Online Friends
+				</h4>
+			</div>
+			<div class='list-group' id='friend_list_online' style='overflow-y:scroll;height:80%;'>
+			</div>
+		</div>
+
+		<div class="panel panel-default" id='offline_panel' style='height:35%;width:100%;float:left;'>
+			<div class='panel-heading' id='offline-header' style='background-color:#0066ff;color:white;'>
+				<h4 class='panel-title'>
+					Offline Friends
+				</h4>
+			</div>
+			<div class='list-group' id='friend_list_offline' style='overflow-y:scroll;height:80%;'>
+			</div>
+		</div>
+
+		<div id="friend_interface" class='panel panel-default' style='height:20%;width:100%;float:left;'>
+			<div class='panel-body'>
+				<input type='text' id='new_friend_id' class='form-control' placeholder='new/delete friend id here' />
+				<button type="button" id='addfriend' class="btn btn-default btn-sm" style='width:50%;float:left;'>
+					<span class="glyphicon glyphicon-plus"></span>Friend
+				</button>
+				<button type="button" id='removefriend' class="btn btn-default btn-sm" style='width:50%;float:left;'>
+					<span class="glyphicon glyphicon-minus"></span>Friend
+				</button>
+			</div>
+		</div>
+
+	</div>
+</div>
+
+
+<div id='friend_list_card' style='display:none;'>
+	<a class='list-group-item' name='%friend_id%'>
+		<div id='%friend_id%' name='friend_info_href'>
+		%symbol_glyph%
+		%friend_nick%
+		</div>
+	</a>
+</div>
+
+<script text="text/javascript">
+var format_check = function(data){
+	if(data.length == 0)
+		return false;
+	if(data == 'new/delete friend id here')
+		return false;
+	return true;
+};
+var renderFriendList = function(data){
+	//$('div[id=friend_list_up]').empty();
+	//$('a[name=friend_info_href]').off('click');
+
+	for(var i in data){
+		var cp_msg = $('div[id=friend_list_card]').html();
+		cp_msg = cp_msg.replace(/%friend_id%/gi, data[i].friend_id);
+		cp_msg = cp_msg.replace(/%friend_nick%/gi, data[i].friend_nick);
+		if(data[i].isOnline == 1){
+			cp_msg = cp_msg.replace(/%symbol_glyph%/gi, '<span class="label label-success" id="state_symbol">Online</span>');
+			$('div[id=friend_list_online]').append(cp_msg);
+		}else{
+			cp_msg = cp_msg.replace(/%symbol_glyph%/gi, '<span class="label label-danger" id="state_symbol">Offline</span>');
+			$('div[id=friend_list_offline]').append(cp_msg);
+		}
+	}
+
+	$('a[name=friend_info_href]').on('click', function(){
+		window.open('/friend_info/?fid=' + $(this).attr('id'), 'show friend info', 'width = 500, height = 400');
+	});
+};
+var updateFriendState = function(data){
+	$('div[id=friend_list_up_div]').find('a[name=' + data.friend_id + ']').remove();
+	var cp_msg = $('div[id=friend_list_card]').html();
+
+	cp_msg = cp_msg.replace(/%friend_id%/gi, data.friend_id);
+	cp_msg = cp_msg.replace(/%friend_nick%/gi, data.friend_nick);
+	if(data.isOnline == 1){
+		cp_msg = cp_msg.replace(/%symbol_glyph%/gi, '<span class="label label-success" id="state_symbol">Online</span>');
+		$('div[id=friend_list_online]').append(cp_msg);
+	}else{
+		cp_msg = cp_msg.replace(/%symbol_glyph%/gi, '<span class="label label-danger" id="state_symbol">Offline</span>');
+		$('div[id=friend_list_offline]').append(cp_msg);
+	}
+};
+var deleteFriend = function(data){
+	$('div[id=friend_list_up_div]').find('a[name=' + data + ']').remove();
+};
+var addFriend = function(data){
+	/*
+	input
+		{
+			friend_id : d1,
+			friend_nick : d2,
+			isOnline : d3
+		}
+	*/
+	var format = $('div[id=friend_list_card]').html();
+	format = format.replace(/%friend_id%/gi, data.friend_id);
+	format = format.replace(/%friend_nick%/gi, data.friend_nick);
+	if(data.isOnline == 1){
+		format = format.replace(/%symbol_glyph%/gi, '<span class="label label-success" id="state_symbol">Online</span>');
+		$('div[id=friend_list_online]').append(format);
+	}else{
+		format = format.replace(/%symbol_glyph%/gi, '<span class="label label-danger" id="state_symbol">Offline</span>');
+		$('div[id=friend_list_offline]').append(format);
+	}
+};
+
+var resetFriendIDInput = function(){
+	$('input[id=new_friend_id]').val('');
+};
+
+$(function(){
+	$('button[id=addfriend]').on('click', function(){
+		if(format_check($('input[id=new_friend_id]').val())){
+			var new_friend_id = $('input[id=new_friend_id]').val();
+			var ret = {
+				action : 'create',
+				value : {
+					friend_id : new_friend_id
+				}
+			};
+
+			socket.json.emit('client_friendRequest', ret);
+		}else{
+			alert('추가할 친구 아이디를 입력해주세요.');
+			$('input[id=new_friend_id]').focus();
+		}
+	});
+	$('button[id=removefriend]').on('click', function(){
+		if(format_check($('input[id=new_friend_id]').val())){
+			var rem_friend_id = $('input[id=new_friend_id]').val();
+			var ret = {
+				action : 'delete',
+				value : {
+					friend_id : rem_friend_id
+				}
+			};
+
+			socket.json.emit('client_friend', ret);
+		}else{
+			alert('삭제할 친구 아이디를 입력해주세요.');
+			$('input[id=new_friend_id]').focus();
+		}
+	});
+
+	socket.json.emit('client_friend', {
+		action : 'read'
+	});
+});
+</script>

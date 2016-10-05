@@ -119,14 +119,14 @@ $(function(){
       $.ajax({
         url : '/member_create',
         method : 'POST',
+        dataType:'json',
         data : {
           id : $('input[id=input_id]').val(),
           password : $('input[id=input_pass]').val(),
           nickname : $('input[id=input_nick]').val(),
           name : $('input[id=input_name]').val()
         },
-        success : function(msg){
-          var msg_data = JSON.parse(msg);
+        success : function(msg_data){
           switch(msg_data.result){
             case 0:
             {

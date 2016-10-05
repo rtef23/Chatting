@@ -2,7 +2,7 @@
 
 var db = require("./db");
 
-exports.get_friend_list_with_status = function(form, callback){
+exports.read_friendListWithStatus = function(form, callback){
 	/*
 	return friend list with friend meta data
 	input
@@ -13,8 +13,8 @@ exports.get_friend_list_with_status = function(form, callback){
 				1 : when finding friend successes
 				0 : failed in finding friend
 			data : [
-				{fid : d1, isOnline : i_d1, last_login : l_d1},
-				{fid : d2, isOnline : i_d2, last_login : l_d2},
+				{friend_nick : d1, friend_id : d'1, isOnline : i_d1},
+				{friend_nick : d2, friend_id : d'2, isOnline : i_d2},
 				and so on...
 			]
 		}
@@ -24,11 +24,13 @@ exports.get_friend_list_with_status = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0, data : []};
 		callback(result);
 		return result;
 	}
-	conn.query('select mem_meta.user_id as fid, isOnline from ((select from_id as user_id from friend_list where to_id=? and isFriend=1) union (select to_id as user_id from friend_list where from_id=? and isFriend=1)) uni_fl natural join mem_meta order by isOnline DESC, fid', [id, id], function(err, rows){
+
+	conn.query('select t1.id as friend_id, t2.nickname as friend_nick, t1.isOnline as isOnline from (select user_id as id, isOnline from ((select from_id as user_id from friend_list where to_id=? and isFriend=1) union (select to_id as user_id from friend_list where from_id=? and isFriend=1)) as uni_table natural join mem_meta) as t1 natural join member as t2', [id, id], function(err, rows){
 		if(err){
 			conn.end();
 			result = {result : 0, data : []};
@@ -42,7 +44,7 @@ exports.get_friend_list_with_status = function(form, callback){
 	});
 }
 
-exports.get_friend_list = function(form, callback){
+exports.read_friendList = function(form, callback){
 	/*
 	return friend list about form.id
 	input
@@ -64,6 +66,7 @@ exports.get_friend_list = function(form, callback){
 	var result;
 	
 	if(!conn){
+		conn.end();
 		result = {result : 0, data : []}
 		callback(result);
 		return result;
@@ -74,20 +77,19 @@ exports.get_friend_list = function(form, callback){
 				result = {result : 0, data : {}}
 				conn.end();
 				callback(result);
-				console.log(err);
 				return result;
 			}
 			result = {
 				result : 1,
 				data : rows
-			}
+			};
 			conn.end();
 			callback(result);
 			return result;
 		});
 }
 
-exports.insert_friend_list = function(form, callback){
+exports.create_friendRequest = function(form, callback){
 	/*
 	insert friend list
 	input
@@ -105,6 +107,7 @@ exports.insert_friend_list = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -144,6 +147,7 @@ exports.get_friendRequestNum = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -162,7 +166,7 @@ exports.get_friendRequestNum = function(form, callback){
 	});
 }
 
-exports.get_friendRequests = function(form, callback){
+exports.read_friendRequests = function(form, callback){
 	/*
 	input
 		{
@@ -175,8 +179,8 @@ exports.get_friendRequests = function(form, callback){
 				1 : success
 			data : 
 			[
-				{from_id : d1},
-				{from_id : d2}
+				{from_id : d1, from_nick : d'1},
+				{from_id : d2, from_nick : d'2}
 				...
 			]
 		}
@@ -185,11 +189,12 @@ exports.get_friendRequests = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
 	}
-	conn.query('select from_id from friend_list where isFriend=0 and to_id=?', [form.id], function(err, rows){
+	conn.query('select id as from_id, nickname as from_nick from member where member.id in (select from_id as id from friend_list where isFriend=0 and to_id=?)', [form.id], function(err, rows){
 		if(err){
 			conn.end();
 			result = {result : 0};
@@ -220,6 +225,7 @@ exports.update_friendRequest = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -255,6 +261,7 @@ exports.delete_friendRequest = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
@@ -272,7 +279,7 @@ exports.delete_friendRequest = function(form, callback){
 		return result;
 	});
 }
-exports.remove_friend = function(form, callback){
+exports.delete_friend = function(form, callback){
 	/*
 	input
 		{
@@ -290,17 +297,61 @@ exports.remove_friend = function(form, callback){
 	var result;
 
 	if(!conn){
+		conn.end();
 		result = {result : 0};
 		callback(result);
 		return result;
 	}
 	conn.query('delete from friend_list where isFriend=1 and ((from_id=? and to_id=?) or (to_id=? and from_id=?))', [form.id1, form.id2, form.id1, form.id2], function(err, rows){
 		if(err){
+			conn.end();
 			result = {result : 0};
 			callback(result);
 			return result;
 		}
+		conn.end();
 		result = {result : 1};
+		callback(result);
+		return result;
+	});
+}
+exports.read_hasFriendRequest = function(form, callback){
+	/*
+	input
+		{
+			id1 : d1,
+			id2 : d2
+		}
+	output
+		{
+			result : 
+				0:no request
+				1:there is friend request
+				2:error
+		}
+	*/
+	var conn = db.getConn();
+	var result;
+
+	if(!conn){
+		conn.end();
+		result = {result : 2};
+		callback(result);
+		return result;
+	}
+
+	conn.query('select count(fid) as cnt from ((select from_id as fid from friend_list where to_id=? and from_id=?) union (select from_id as fid from friend_list where to_id=? and from_id=?)) as t1', [form.id1, form.id2, form.id2, form.id1], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 2};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		if(rows[0].cnt > 0)
+			result = {result : 1};
+		else
+			result = {result : 0};
 		callback(result);
 		return result;
 	});

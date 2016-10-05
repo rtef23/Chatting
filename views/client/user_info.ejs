@@ -1,104 +1,134 @@
 <style>
-	div#user_info_pan{
-		margin-left:0.5%;
-		margin-right:0.5%;
-		width:79%;
-		height:80%;
-		background-color:#e6f2ff;
-		float:left;
-	}
-	div#user_info_body{
-		margin-left:1%;
-		margin-top:1%;
-		margin-right:1%;
-		width : 60%;
-	}
-	div#user_info_head{
-		width:100%;
-		height:10%;
-		float:left;
-		background-color:#99ccff;
-	}
+div#profile_panel{
+	width:100%;
+	height:100%;
+}
+div#profile_header{
+	width:100%;
+	height:10%;
+	background-color:#0066ff;
+	text-align:center;
+}
+div#profile_body{
+	width:100%;
+	height:40%;
+	background-color:#e6f2ff;
+}
+div#profile_footer{
+	width:100%;
+	height:50%;
+	background-color:#cce6ff;
+	text-align:center;
+}
 </style>
-<div id='user_info_pan'>
-	<div id='user_info_head'>
-		<center>
-			<br>
-			<font style='font-size:32px;color:#004d99;margin-top:5%;'>
-			<B><span class="glyphicon glyphicon-list-alt"></span>&nbsp;User Profile</B>
-			</font>
-		</center>
+<div id='profile_panel' class='panel-info'>
+	<div id='profile_header' class='panel-heading'>
+		<font id='friend_request_title' style='font-size:32px;color:#cce6ff;margin-top:5%;'>
+			<B>
+				<span class='glyphicon glyphicon-search'>
+				</span>
+				Profile
+			</B>
+		</font>
 	</div>
-	<div id='user_info_body'>
-	<left>
-	<form id='edit_user_form'>
-		<p><B>ID : <div id='info_id' /></B></p>
-		<p><B>Nick Name : </B><input id='info_user_nick' type='text' class='form-control' /></p>
-		<p><B>Name : </B><input id='info_user_name' type='text' class='form-control' /></p>
-		<input type='submit' value='edit' class="btn btn-primary" />
-		<input type='hidden' id='edit_user_id' class="btn btn-primary" />
-	</form>
-	</left>
+	<div id='profile_body' class='panel-body'>
+		<table class='table table-striped table-hover'>
+			<tbody>
+				<tr>
+					<td>
+						<B>
+							ID
+						</B>
+					</td>
+					<td>
+						<div id='user_id'>
+							yourID
+						</div>
+						<input type='hidden' id='user-id-hidden' />
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<B>
+							Name
+						</B>
+					</td>
+					<td>
+						<input type='input' id='user_name'>
+						</input>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<B>
+							NickName
+						</B>
+					</td>
+					<td>
+						<input type='input' id='user_nick'>
+						</input>
+					</td>
+				</tr>
+				<tr>
+					<td>
+						<B>
+							create account time
+						</B>
+					</td>
+					<td>
+						<div id='user_cdate'>
+							YYYY-mm-dd HH:MM:ss
+						</div>
+					</td>
+				</tr>
+			</tbodt>
+		</table>
+	</div>
+	<div id='profile_footer' class='panel-footer'>
+		<button class='btn-block btn-success' id='profile_edit'>
+			Edit
+		</button>
 	</div>
 </div>
 <script>
-	$(function(){
-		socket.emit('client_request_ID');
-		socket.on('server_response_ID', function(msg){
-			var msg_data = JSON.parse(msg);
-			$.ajax({
-				url : '/member_info',
-				method : 'POST',
-				data : {
-					id : msg_data.id
-				},
-				success : function(msg1){
-					var msg1_data = JSON.parse(msg1);
-					renderUserInfo(msg1_data.data);
-				}
-			});
-		});
-	});
-	var renderUserInfo = function(data){
-		$('div[id=info_id]').text(data.id);
-		$('input[id=info_user_nick]').val(data.nickname);
-		$('input[id=info_user_name]').val(data.name);
-	}
-	$('#edit_user_form').submit(function(){
-		if($('input[id=info_user_nick]').val() == ''){
-			alert('Nick Name을 입력하세요.');
-			$('#edit_user_nick').focus();
-			return false;
-		}
-		if($('input[id=info_user_name]').val() == ''){
-			alert('Name을 입력하세요.');
-			$('#edit_user_name').focus();
-			return false;
-		}
-		$.ajax({
-			url : '/member_update',
-			method : 'POST',
-			data : {
-				id : $('div[id=info_id]').text(),
-				nickname : $('input[id=info_user_nick]').val(),
-				name : $('input[id=info_user_name]').val()
-			},
-			success : function(res){
-				var res_data = JSON.parse(res);
-				switch(res_data.result){
-					case 0:
-					{
-						alert("error\nplease try again");
-					}
-					break;
-					case 1:
-					{
-						alert("success in updating!!!");
-					}
-					break;
-				}
-			}
-		});
+var renderProfile = function(data){
+	$('div[id=profile_body]').find('#user-id-hidden').val(data.id);
+	$('div[id=user_id]').text(data.id);
+	$('input[id=user_name]').val(data.name);
+	$('input[id=user_nick]').val(data.nickname);
+	$('div[id=user_cdate]').text(data.cdate);
+};
+var check_profileEditForm = function(edited_data){
+	if(typeof edited_data.name == 'undefined' || edited_data.name == ''){
+		$('input[id=user_name]').focus();
+		alert('insert your name')
 		return false;
+	}
+	if(edited_data.nickname == '' || typeof edited_data.nickname == 'undefined'){
+		$('input[id=user_nick]').focus();
+		alert('insert your nick name');
+		return false;
+	}
+	return true;
+};
+$(function(){
+	var ret = {
+		action : 'read'
+	};
+	socket.json.emit('client_member', ret);
+
+	$('button[id=profile_edit]').on('click', function(){
+		var edited_data = {
+			nickname : $('input[id=user_nick]').val(),
+			name : $('input[id=user_name]').val()
+		};
+		if(!check_profileEditForm(edited_data))
+			return;
+		var ret = {
+			action : 'update',
+			value : edited_data
+		};
+		socket.json.emit('client_member', ret);
 	});
+});
 </script>
