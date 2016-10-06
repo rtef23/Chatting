@@ -629,7 +629,7 @@ module.exports = function(io, client_socket_ids){
 		});
 
 		socket.on('client_room', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
+			if(!client_socket_ids.has(socket.user_id)){//check user valid
 				onInvalidConnect(socket);
 				socket.disconnect(true);
 				return;
@@ -638,9 +638,21 @@ module.exports = function(io, client_socket_ids){
 			switch(msg.action){
 				case 'create':
 				{
+					/*
+					{
+						action : 'response',
+						value : {
+							call : 'c_room',
+							result
+								0 : fail
+								1 : success
+						}
+					}
+					*/
 					var room_id = crypto.createHash('sha256').update(new Date().format('yyyy-MM-dd HH:mm:ss') + socket.user_id).digest('hex');
 					var room_title = msg.value.room_title;
-					chat_room.create_NewRoom({
+					
+					chat_room.create_room({
 						room_id : room_id,
 						room_title : room_title
 					}, function(result){
@@ -651,8 +663,8 @@ module.exports = function(io, client_socket_ids){
 									action : 'response',
 									value : {
 										call : 'c_room',
-										result : 0,
-										room_title : room_title
+										room_title : room_title,
+										result : 0
 									}
 								};
 								socket.json.emit('server_room', ret);
@@ -660,32 +672,33 @@ module.exports = function(io, client_socket_ids){
 							break;
 							case 1://success
 							{
-								room_joined.create_roomJoined({
+								//bind request user and created room
+								room_joined.create_roomJoin({
 									room_id : room_id,
-									id : socket.user_id,
+									user_id : socket.user_id
 								}, function(result1){
 									switch(result1.result){
 										case 0://fail
-										{
+										{//send fail message
 											var ret = {
 												action : 'response',
 												value : {
 													call : 'c_room',
-													result : 0,
-													room_title : room_title
+													room_title : room_title,
+													result : 0
 												}
 											};
 											socket.json.emit('server_room', ret);
-
-											chat_room.delete_Room({
+											//delete created room
+											chat_room.delete_room({
 												room_id : room_id
 											}, function(result2){
 												switch(result2.result){
-													case 0://fail, log this error info
-													{}
+													case 0://fail, log this room error
+													{
+													}
 													break;
 													case 1://success, do nothing
-													{}
 													break;
 												}
 											});
@@ -697,12 +710,13 @@ module.exports = function(io, client_socket_ids){
 												action : 'response',
 												value : {
 													call : 'c_room',
-													result : 1,
-													room_id : room_id,
 													room_title : room_title,
-													members : [
-														{member_id : socket.user_id, member_nick : socket.user_nick}
-													]
+													room_id : room_id,
+													members : [{
+														member_id : socket.user_id,
+														member_nick : socket.user_nick
+													}],
+													result : 1
 												}
 											};
 											socket.json.emit('server_room', ret);
@@ -717,61 +731,29 @@ module.exports = function(io, client_socket_ids){
 				}
 				break;
 				case 'read':
-				{
-					room_joined.read_userJoinedRooms({
-						id : socket.user_id
-					}, function(result){
-						switch(result.result){
-							case 0://fail
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'r_room',
-										result : 0
-									}
-								};
-								socket.json.emit(ret);
-							}
-							break;
-							case 1://success
-							{
-								var isAllDone = 0;
-								result.data.forEach(function(element){
-									room_joined.read_joinedMember({
-										room_id : element.room_id
-									}, function(result1){
-										isAllDone++;
-										switch(result1.result){
-											case 0://fail
-											{}
-											break;
-											case 1://success
-											{
-												element.members = result1.data;
-											}
-											break;
-										}
-
-										if(isAllDone == result.data.length){
-												var ret = {
-												action : 'response',
-												value : {
-													call : 'r_room', 
-													result : 1,
-													data : result.data
-												}
-											};
-											socket.json.emit('server_room', ret);
-										}	
-									});
-								});
-
-							}
-							break;
+				{/*
+				input
+					{
+						action : 'read',
+						value : {
+							target : 
+								'single' : read single room,
+								'all' : read multiple rooms
 						}
+					}
+				*/
+					switch(msg.value.target){
+						case 'single':
+						{//read room which user joined
 
-					});
+						}
+						break;
+						case 'all':
+						{//read every rooms which user joined
+
+						}
+						break;
+					}
 				}
 				break;
 				case 'update':
@@ -809,113 +791,12 @@ module.exports = function(io, client_socket_ids){
 							}
 						}
 					*/
-					var target_id = msg.value.target_id.trim().toLowerCase();
-					//check whether user request is valid or not
-					room_joined.read_userJoined({
-						user_id : socket.user_id,
-						room_id : msg.value.room_id
-					}, function(result){
-						switch(result.result){
-							case 0://not joined
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'c_roomInvite',
-										result : 0,
-										target_id : target_id
-									}
-								};
-								socket.json.emit('server_roomInvite', ret);
-							}
-							break;
-							case 1://joined => valid request
-							{
-								room_joined.create_roomInvitation({
-									room_id : msg.value.room_id,
-									user_id : target_id
-								}, function(result1){
-									var ret = {
-										action : 'response',
-										value : {
-											call : 'c_roomInvite',
-											result : result1.result,
-											target_id : target_id
-										}
-									};
-									socket.json.emit('server_roomInvite', ret);
-									
-									if(client_socket_ids.has(target_id)){
-										chat_room.read_room({
-											room_id : msg.value.room_id
-										}, function(result2){
-											switch(result2.result){
-												case 0://fail, log this error
-												{
-												}
-												break;
-												case 1://success
-												{
-													if(client_socket_ids.has(target_id)){
-														var target_sock = io.sockets.sockets[client_socket_ids.get(target_id)];
-														if(typeof target_sock != 'undefined'){
-															var ret1 = {
-																action : 'create',
-																value : {
-																	room_id : msg.value.room_id,
-																	room_title : result2.data.room_title,
-																	from_nick : socket.user_nick
-																}
-															};
-															target_sock.json.emit('server_roomInvite', ret1);
-														}
-													}
-												}
-												break;
-											}
-										});
-									}
-								});
-							}
-							break;
-						}
-					});
-					console.log(JSON.stringify(msg));
+					
 				}
 				break;
 				case 'read':
 				{
-					room_joined.read_userUnjoinedRooms({
-						id : socket.user_id
-					}, function(result){
-						var ret;
-						switch(result.result){
-							case 0://fail
-							{
-								ret = {
-									action : 'response',
-									value : {
-										call : 'r_roomInvite',
-										result : 0
-									}
-								};
-							}
-							break;
-							case 1://success
-							{
-								ret = {
-									action : 'response',
-									value : {
-										call : 'r_roomInvite',
-										result : 1,
-										data : result.data
-									}
-								};
-							}
-							break;
-						}
-						socket.json.emit('server_roomInvite', ret);
-					});
+					
 				}
 				break;
 				case 'update':

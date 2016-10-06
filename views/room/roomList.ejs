@@ -176,7 +176,10 @@ $(function(){
 	};
 	renderRoomCol1(data);
 	var ret = {
-		action : 'read'
+		action : 'read',
+		value : {
+			target : 'all'
+		}
 	};
 	socket.json.emit('client_room', ret);
 

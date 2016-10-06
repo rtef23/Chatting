@@ -197,7 +197,7 @@ $(function(){
 						switch(value.result){
 							case 0://fail
 							{
-								alert(room_title + ' 의 방을 생성하는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+								alert(value.room_title + ' 의 방을 생성하는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
 							}
 							break;
 							case 1://success

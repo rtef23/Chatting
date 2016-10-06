@@ -1,11 +1,11 @@
 var db = require('./db');
 
-exports.create_roomJoined = function(form, callback){
+exports.create_roomJoin = function(form, callback){
 	/*
 	input
 		{
 			room_id : d1,
-			id : d2,
+			user_id : d2,
 		}
 	output
 		{
@@ -23,6 +23,21 @@ exports.create_roomJoined = function(form, callback){
 		return result;
 	}
 	
+	conn.query('insert into room_joined set ?', {
+		room_id : form.room_id,
+		user_id : form.user_id
+	}, function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {result : 1};
+		callback(result);
+		return result;
+	});
 }
 
 exports.read_userJoinedRooms = function(form, callback){

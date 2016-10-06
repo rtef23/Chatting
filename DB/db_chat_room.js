@@ -1,6 +1,6 @@
 var db = require('./db');
 
-exports.create_NewRoom = function(form, callback){
+exports.create_room = function(form, callback){
 	/*
 	input
 		{
@@ -39,7 +39,7 @@ exports.create_NewRoom = function(form, callback){
 	});
 }
 
-exports.delete_Room = function(form, callback){
+exports.delete_room = function(form, callback){
 	/*
 	input
 		{
