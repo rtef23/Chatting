@@ -170,7 +170,7 @@ var onSignOutClick = function(){
 	$('li[name=nav_signout]').find('font').css('color', active2_font_color);
 	$('li[name=nav_signout]').children('a').css('background-color', active2_bg_color);
 	socket.emit('disconnect');
-	document.location = '/chatting';
+	document.location = '/';
 };
 var renderLoginTab = function(){
 	$('span[id=num_joined_room]').text(room_count);
@@ -182,6 +182,13 @@ $(function(){
 		action : 'read'
 	};
 	socket.json.emit('client_friendRequest', ret);
+	ret = {
+		action : 'read',
+		value : {
+			target : 'all'
+		}
+	};
+	socket.json.emit('client_room', ret);
 
 	resetTab();
 	onIDClick();

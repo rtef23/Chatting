@@ -2,6 +2,60 @@
 
 var db = require("./db");
 
+exports.read_isFriend = function(form, callback){
+	/*
+	input
+		{
+			id1 : d1,
+			id2 : d2
+		}
+	output
+		{
+			result : 
+				0 : error or not friend
+				1 : friend
+		}
+	*/
+	var conn = db.getConn();
+	var result;
+
+	if(!conn){
+		conn.end();
+		result = {
+			result : 0
+		};
+		callback(result);
+		return result;
+	}
+
+	conn.query('select count(uid) as cnt from ((select from_id as uid from friend_list where from_id=? and to_id=? and isFriend=1) union (select to_id as uid from friend_list where from_id=? and to_id=? and isFriend=1)) u1',[
+			form.id1,
+			form.id2,
+			form.id2,
+			form.id1
+		], function(err, rows){
+			if(err){
+				conn.end();
+				result = {
+					result : 0
+				};
+				callback(result);
+				return result;
+			}
+			conn.end();
+			if(rows[0].cnt > 0)
+				result = {
+					result : 1
+				};
+			else
+				result = {
+					result : 0
+				};
+			callback(result);
+			return result;
+	});
+}
+
 exports.read_friendListWithStatus = function(form, callback){
 	/*
 	return friend list with friend meta data
@@ -13,8 +67,8 @@ exports.read_friendListWithStatus = function(form, callback){
 				1 : when finding friend successes
 				0 : failed in finding friend
 			data : [
-				{friend_nick : d1, friend_id : d'1, isOnline : i_d1},
-				{friend_nick : d2, friend_id : d'2, isOnline : i_d2},
+				{friend_nick : d1, friend_id : d'1},
+				{friend_nick : d2, friend_id : d'2},
 				and so on...
 			]
 		}
@@ -30,7 +84,7 @@ exports.read_friendListWithStatus = function(form, callback){
 		return result;
 	}
 
-	conn.query('select t1.id as friend_id, t2.nickname as friend_nick, t1.isOnline as isOnline from (select user_id as id, isOnline from ((select from_id as user_id from friend_list where to_id=? and isFriend=1) union (select to_id as user_id from friend_list where from_id=? and isFriend=1)) as uni_table natural join mem_meta) as t1 natural join member as t2', [id, id], function(err, rows){
+	conn.query('select t1.id as friend_id, t2.nickname as friend_nick from (select user_id as id from ((select from_id as user_id from friend_list where to_id=? and isFriend=1) union (select to_id as user_id from friend_list where from_id=? and isFriend=1)) as uni_table natural join mem_meta) as t1 natural join member as t2', [id, id], function(err, rows){
 		if(err){
 			conn.end();
 			result = {result : 0, data : []};

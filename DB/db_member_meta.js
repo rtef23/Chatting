@@ -2,48 +2,6 @@
 var db = require('./db');
 require('../Util/date');
 
-exports.member_meta_isOnline = function(form, callback){
-	/*
-	input : 
-		{
-			id : data1
-		}
-	output : 
-		{
-			result : 
-				0 : if not online member
-				1 : online user
-				2 : error
-		}
-	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		result = {result : 2};
-		callback(result);
-		return result;
-	}
-	conn.query('select isOnline from mem_meta where user_id=?', [form.id], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 2};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		if(rows[0].isOnline == 1){
-			result = {result : 1};
-			callback(result);
-			return result;
-		}else{
-			result = {result : 0};
-			callback(result);
-			return result;
-		}
-	});
-}
-
 exports.update_memberMetaOnLogin = function(form, callback){
 	/*
 		update member meta information
@@ -67,46 +25,12 @@ exports.update_memberMetaOnLogin = function(form, callback){
 		return result;
 	}
 
-	conn.query("update mem_meta set isOnline=?, last_login=? where user_id=?", [true, new Date().format('yyyy-MM-dd HH:mm:ss'), form.id], function(err, row){
+	conn.query("update mem_meta set last_login=? where user_id=?", [new Date().format('yyyy-MM-dd HH:mm:ss'), form.id], function(err, row){
 		if(err){
 			conn.end();
 			result = {result : 0};
 			callback(form, result);
 			return result;
-		}
-		conn.end();
-		result = {result : 1};
-		callback(result);
-		return result;
-	});
-}
-exports.update_memberMetaOnLogout = function(form, callback){
-	/*
-	input
-	{
-		id : data1
-	}
-	output
-	{
-		result : 
-			0 : error or there is no member in DB
-			1 : if successing in updating
-	}
-	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		conn.end();
-		result = {result : 0};
-		callback(form, result);
-		return result;
-	}
-	conn.query("update mem_meta set isOnline=? where user_id=?", [false, form.id], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 0};
-			callback(result);
 		}
 		conn.end();
 		result = {result : 1};
@@ -193,7 +117,6 @@ exports.create_member_meta = function(form, callback){
 	}
 	conn.query('insert into mem_meta set ?',{
 		user_id : form.id,
-		isOnline : false,
 		create_date : new Date().format('yyyy-MM-dd HH:mm:ss')
 	}, function(err, rows){
 		if(err){

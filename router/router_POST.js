@@ -1,9 +1,9 @@
-module.exports = function(app){
+module.exports = function(app, online_users){
 	var fs = require("fs");
 	var member = require("../DB/db_member");
 	var member_meta = require("../DB/db_member_meta");
+	var friend_list = require('../DB/db_friend_list');
 	var url = require('url');
-
 	var crypto = require('crypto');
 	require('../Util/date');
 	var server = require('../server');
@@ -18,6 +18,7 @@ module.exports = function(app){
 				value : 
 			}
 		*/
+		console.log(JSON.stringify(req.body));
 		switch(req.body.action){
 			case 'create':
 			{
@@ -36,9 +37,9 @@ module.exports = function(app){
 							call : 'c_member',
 							id : d1,
 							result : 
-								'success'
-								'fail'
-								'error'
+								0 : fail, already ext member id
+								1 : success
+								2 : error
 						}
 					}
 				*/
@@ -59,7 +60,7 @@ module.exports = function(app){
 								value : {
 									call : 'c_member',
 									id : id,
-									result : 'fail'
+									result : 0
 								}
 							};
 							res.json(ret);
@@ -72,7 +73,7 @@ module.exports = function(app){
 								value : {
 									call : 'c_member',
 									id : id,
-									result : 'error'
+									result : 2
 								}
 							};
 							res.json(ret);
@@ -93,7 +94,7 @@ module.exports = function(app){
 									value : {
 										call : 'c_member',
 										id : id,
-										result : 'error'
+										result : 2
 									}
 								};
 								res.json(ret);
@@ -122,7 +123,7 @@ module.exports = function(app){
 												value : {
 													call : 'c_member',
 													id : id,
-													result : 'error'
+													result : 2
 												}
 											};
 											res.json(ret);
@@ -135,7 +136,7 @@ module.exports = function(app){
 												value : {
 													call : 'c_member',
 													id : id,
-													result : 'success'
+													result : 1
 												}
 											};
 											res.json(ret);
@@ -187,5 +188,92 @@ module.exports = function(app){
 			chat_url : chat_addr
 		};
 		res.json(result);
+	});
+
+	app.post('/client_friend', function(req, res){
+		/*
+		input
+			{
+				request_id : d1,
+				friend_id : d2
+			}
+		output
+			{
+				result :
+					0 : error or is not friend
+					1 : friend
+				value : {
+					friend_id : r1,
+					friend_nick : r2,
+					friend_name : r3
+				}
+
+			}
+		*/
+		switch(req.body.action){
+			case 'read' : 
+			{
+				var req_id = req.body.value.request_id;
+				var f_id = req.body.value.friend_id;
+
+				//check whether request_id is online or not
+				if(!online_users.has(req_id)){
+					var ret = {
+						result : 0
+					};
+					res.json(ret);
+					return;
+				}
+
+				//check whether request_id and friend_id is friend or not
+				friend_list.read_isFriend({
+					id1 : req_id,
+					id2 : f_id
+				}, function(result){
+					switch(result.result){
+						case 0://error or is not friend
+						{
+							var ret = {
+								result : 0
+							};
+							res.json(ret);
+						}
+						break;
+						case 1:
+						{
+							member.read_member({
+								id : f_id
+							}, function(result1){
+								switch(result1.result){
+									case 0://read error
+									{
+										var ret = {
+											result : 0
+										};
+										res.json(ret);
+									}
+									break;
+									case 1:
+									{//success
+										var ret = {
+											result : 1,
+											value : {
+												friend_id : result1.data.id,
+												friend_nick : result1.data.nickname,
+												friend_name : result1.data.name
+											}
+										};
+										res.json(ret);
+									}
+									break;
+								}
+							});
+						}
+						break;
+					}
+				});
+			}
+			break;
+		}
 	});
 }

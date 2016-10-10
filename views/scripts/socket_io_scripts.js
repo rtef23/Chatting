@@ -216,7 +216,7 @@ $(function(){
 						}
 					}
 					break;
-					case 'r_room' : 
+					case 'r_room_all' : 
 					{
 						switch(value.result){
 							case 0://fail
@@ -228,7 +228,8 @@ $(function(){
 							{
 								room_count = value.data.length;
 								renderLoginTab();
-								renderRooms(value.data);
+								if(current_document == 'rooms')
+									renderRooms(value.data);
 							}
 							break;
 						}
@@ -285,7 +286,7 @@ $(function(){
 				}
 			}
 			break;
-			case 'create':
+			case 'update':
 			{
 				room_count++;
 				renderLoginTab();

@@ -107,7 +107,7 @@ exports.read_room = function(form, callback){
 			return result;
 		}
 		conn.end();
-		result = {result : 1, data : rows[0].room_title};
+		result = {result : 1, data : {room_title : rows[0].room_title}};
 		callback(result);
 		return result;
 	});

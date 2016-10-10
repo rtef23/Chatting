@@ -1,15 +1,8 @@
 module.exports = function(app){
 	var fs = require("fs");
-	var bodyParser = require("body-parser");
 	var path = require("path");
 	var url = require('url');
 	var member = require('../DB/db_member');
-
-	app.use(bodyParser.json());//to support json encoded body
-	app.use(bodyParser.urlencoded({
-		extended : true
-	}));//to support url encoded body
-
 
 	//################## GET #####################
 		//return socket.io.js file
@@ -43,12 +36,7 @@ module.exports = function(app){
 		});
 	});
 
-	//base
 	app.get('/', function(req, res){
-		res.render('static_files/gate');
-	});
-
-	app.get('/chatting', function(req, res){
 		res.render('static_files/chatting');
 	});
 

@@ -28,7 +28,6 @@ create table mem_meta(
 	user_id char(30) not null,
 	last_login datetime default null,
 	create_date datetime not null,
-	isOnline boolean default false,
 	foreign key(user_id) references member(id) on delete cascade on update cascade
 );
 
@@ -53,7 +52,7 @@ create table room_invite(
 	foreign key(from_id) references member(id) on delete cascade on update cascade,
 	foreign key(to_id) references member(id) on delete cascade on update cascade,
 	foreign key(room_id) references chat_room(room_id) on delete cascade on update cascade,
-	primary key(room_id, from_id, to_id)
+	primary key(room_id, to_id)
 );
 
 create table chat_log(

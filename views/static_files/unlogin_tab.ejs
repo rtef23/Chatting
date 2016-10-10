@@ -60,6 +60,11 @@ $(function(){
 			}
 		});
 
+		socket.on('disconnect', function(){
+			alert('연결이 종료 되었습니다.');
+			document.location = '/';
+		});
+
 		socket.on('server_connect', function(msg){
 			switch(msg.action){
 				case 'response':
@@ -75,11 +80,13 @@ $(function(){
 								break;
 								case 1://exist member, not online
 								{
+									id = msg.value.request_id;
 									changeToLogin(data.id);
 								}
 								break;
 								case 2://exist member, online
 								{
+									id = msg.value.request_id;
 									alert('기존 접속을 종료하고 새로 연결하였습니다.');
 									changeToLogin(data.id);
 								}
@@ -101,7 +108,7 @@ $(function(){
 					switch(msg.value.call){
 						case 'invalid_connect':
 						{
-							alert('유효하지 않은 접근입니다.\n다시 접속해 주세요.');
+							alert('유효하지 않은 접근입니다.');
 						}
 						break;
 						case 'new_connect':
@@ -110,7 +117,6 @@ $(function(){
 						}
 						break;
 					}
-					document.location = '/chatting'
 				}
 			}
 		});

@@ -79,7 +79,7 @@ div#rooms_panel{
 			%room_title%
 		</div>
 		<div id='room_info_mid' style='float:left;width:35%;'>
-			<font style='color:green;'>
+			<font style='color:green;' data-placement='bottom' data-toggle="tooltip" title="%members%">
 				<span class='glyphicon glyphicon-user' />
 				%number_member%
 			</font>
@@ -125,7 +125,18 @@ var addRoom = function(data){
 	var form = $('div[id=room_form]').html();
 	form = form.replace(/%room_id%/gi, data.room_id);
 	form = form.replace(/%room_title%/gi, data.room_title);
-	form = form.replace(/%number_member%/gi, data.members.length);
+	if(data.joined_member.result == 0){
+		form = form.replace(/%number_member%/gi, 'can\'t read');
+		form = form.replace(/%members%/gi, 'can\'t read');
+	}else{
+		form = form.replace(/%number_member%/gi, data.joined_member.members.length);
+		var member_str = '';
+		for(var i in data.joined_member.members){
+			member_str += data.joined_member.members[i].member_nick;
+			member_str += ' ';
+		}
+		form = form.replace(/%members%/gi, member_str);
+	}
 	$('div[id=rooms_list]').append(form);
 };
 
@@ -139,6 +150,7 @@ var renderRooms = function(data){
 	for(var i in data){
 		addRoom(data[i]);
 	}
+	$('[data-toggle="tooltip"]').tooltip(); 
 };
 
 var onRoomClick = function(object){
@@ -159,6 +171,7 @@ var onInviteClick = function(target_object){
 	}
 
 	var target_id = target_object.children('#inv_friend_id').val();
+	alert('target_id : ' + target_id);
 	var ret = {
 		action : 'create',
 		value : {

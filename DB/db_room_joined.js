@@ -68,6 +68,23 @@ exports.read_userJoinedRooms = function(form, callback){
 		return result;
 	}
 
+	conn.query('select room_id, room_title from room_joined natural join chat_room where user_id=?', [form.id], function(err, rows){
+		if(err){
+			conn.end();
+			result = {
+				result : 0
+			};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {
+			result : 1,
+			data : rows
+		};
+		callback(result);
+		return result;
+	});
 }
 
 
@@ -98,7 +115,23 @@ exports.read_joinedMember = function(form, callback){
 		return result;
 	}
 
-	
+	conn.query('select m.id as member_id, m.nickname as member_nick from (select user_id as id from room_joined where room_id=?) rj natural join member m', [
+		form.room_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {
+			result : 1,
+			data : rows
+		};
+		callback(result);
+		return result;
+	});
 }
 
 exports.read_userJoined = function(form, callback){
@@ -124,29 +157,23 @@ exports.read_userJoined = function(form, callback){
 		return result;
 	}
 
-}
-
-exports.create_roomInvitation = function(form, callback){
-	/*
-	input
-		{
-			room_id : d1
-			user_id : d2
+	conn.query('select room_id from room_joined where user_id=? and room_id=?', [
+		form.user_id,
+		form.room_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
 		}
-	output
-		{
-			result :
-				0 : fail
-				1 : success
+		conn.end();
+		if(rows.length > 0){
+			result = {result : 1};
+		}else{
+			result = {result : 0};
 		}
-	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		result = {result : 0};
 		callback(result);
 		return result;
-	}
-
+	});
 }

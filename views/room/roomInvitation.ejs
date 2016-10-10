@@ -55,6 +55,7 @@ var addRoomInv = function(data){
 	form = form.replace(/%bgcolor%/gi, data.bgcolor);
 	form = form.replace(/%from_nick%/gi, data.from_nick);
 	form = form.replace(/%room_title%/gi, data.room_title);
+	form = form.replace(/%from_id%/gi, data.from_id);
 	$('div[id=room_inv_list]').append(form);
 };
 var renderRoomInvite = function(data){
@@ -70,7 +71,10 @@ var renderRoomInvite = function(data){
 
 $(function(){
 	var ret = {
-		action : 'read'
+		action : 'read',
+		value : {
+			target : 'all'
+		}
 	};
 	socket.json.emit('client_roomInvite', ret);
 

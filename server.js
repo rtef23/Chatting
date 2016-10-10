@@ -7,6 +7,7 @@ var os = require('os');
 var sock_io = require("socket.io");
 var io = sock_io.listen(chat_port);
 var HashMap = require('hashmap');
+var bodyParser = require("body-parser");
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -52,7 +53,15 @@ var getChatServerPort = function(){
 	return chat_port;
 }
 
-var client_socket_ids = new HashMap();
+/*
+	input
+		Key : String which is user_id
+		Value : {
+			user_nick : d1,
+			socket_id : d'1
+		}
+*/
+var online_users = new HashMap();
 
 //export
 exports.getWebServerProtocol = getWebServerProtocol;
@@ -80,6 +89,12 @@ app.use(session({//using redis or mongoDB store session info, not implemented
 	saveUninitialized : true
 }));
 
-var router_POST = require('./router/router_POST')(app);
+app.use(bodyParser.json());//to support json encoded body
+app.use(bodyParser.urlencoded({
+	extended : true
+}));//to support url encoded body
+
+
+var router_POST = require('./router/router_POST')(app, online_users);
 var router_GET = require('./router/router_GET')(app);
-var router_SOCKET = require('./router/router_SOCKET')(io, client_socket_ids);
+var router_SOCKET = require('./router/router_SOCKET')(io, online_users);
