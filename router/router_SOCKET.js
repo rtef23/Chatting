@@ -813,7 +813,93 @@ module.exports = function(io, online_user){
 					switch(msg.value.target){
 						case 'single':
 						{//read room which user joined
+							/*
+							output
+								{
+									action : 'response',
+									value : {
+										call : 'r_room_single',
+										room_id : r1,
+										room_title : r'1,
+										result :
+											0 : fail
+											1 : success,
+										members : [
+											{member_id : m1, member_nick : m'1},
+											...
+										]
+									}
+								}
+							*/
+							var req_id = socket_ids.get(socket.id).user_id;
+							var room_id = msg.value.room_id;
+							room_joined.read_userJoined({
+								room_id : room_id,
+								user_id : req_id
+							}, function(result){
+								switch(result.result){
+									case 0://invalid request
+									{
+										var ret = {
+											action : 'response',
+											value : {
+												call : 'r_room_single',
+												room_id : room_id,
+												room_title : 'unknown',
+												result : 0
+											}
+										};
+										socket.json.emit('server_room', ret);
+									}
+									break;
+									case 1://valid request
+									{
+										chat_room.read_room({
+											room_id : room_id
+										}, function(result1){
+											var ret = {
+												action : 'response',
+												value : {
+													call : 'r_room_single',
+													room_id : room_id,
+													result : 1
+												}
+											};
+											switch(result1.result){
+												case 0://fail
+												{
+													ret.value.room_title = 'unknown';
+												}
+												break;
+												case 1://success
+												{
+													ret.value.room_title = result1.data.room_title;
+												}
+												break;
+											}
 
+											room_joined.read_joinedMember({
+												room_id : room_id
+											}, function(result2){
+												switch(result2.result){
+													case 0://fail
+													{
+														ret.value.result = 0;
+													}
+													break;
+													case 1://success
+													{
+														ret.value.members = result2.data;
+													}
+													break;
+												}
+												socket.json.emit('server_room', ret);
+											});
+										});
+									}
+									break;
+								}
+							});
 						}
 						break;
 						case 'all':
@@ -1031,6 +1117,24 @@ module.exports = function(io, online_user){
 															}
 														});
 													});
+												}else{
+													//if there is some member
+													var ret1 = {
+														action : 'update',
+														value : {
+															room_id : room_id
+														}
+													};
+													for(var i in result2.data){
+														(function(i){
+															process.nextTick(function(){
+																if(online_user.has(result2.data[i].member_id)){
+																	var target_info = online_user.get(result2.data[i].member_id);
+																	io.to(target_info.socket_id).json.emit('server_room', ret1);
+																}
+															});
+														})(i);
+													}
 												}
 											}
 											break;
@@ -1212,7 +1316,6 @@ module.exports = function(io, online_user){
 					switch(msg.value.target){
 						case 'single':
 						{
-
 						}
 						break;
 						case 'all':
@@ -1271,7 +1374,8 @@ module.exports = function(io, online_user){
 									value : {
 										call : 'u_roomInvite',
 										result : 0,
-										room_id : room_id
+										room_id : room_id,
+										room_title : 'unknown'
 									}
 								};
 								socket.json.emit('server_roomInvite', ret);
@@ -1281,27 +1385,97 @@ module.exports = function(io, online_user){
 							{//there is room invite
 								room_title = result.data.room_title;
 
-								room_invite.delete_roomInvite({
-									room_id : room_id,
-									user_id : user_id
-								}, function(result1){
-									switch(result1.result){
-										case 0://error
-										{//log this error
-										}
-										break;
-										case 1://success
-										{//do nothing
-										}
-										break;
-									}
-								});
 								room_joined.create_roomJoin({
 									room_id : room_id,
 									user_id : user_id
 								}, function(result1){
 									switch(result1.result){
-										
+										case 0://fail
+										{
+											var ret = {
+												action : 'response',
+												value : {
+													call : 'u_roomInvite',
+													result : 0,
+													room_id : room_id,
+													room_title : room_title
+												}
+											};
+											socket.json.emit('server_roomInvite', ret);
+										}
+										break;
+										case 1://success
+										{
+											room_invite.delete_roomInvite({
+												room_id : room_id,
+												user_id : user_id
+											}, function(result2){
+												switch(result2.result){
+													case 0://error
+													{//log this error
+													}
+													break;
+													case 1://success
+													{//do nothing
+													}
+													break;
+												}
+											});
+											room_joined.read_joinedMember({
+												room_id : room_id
+											}, function(result2){
+												var ret;
+												switch(result2.result){
+													case 0:
+													{
+														ret = {
+															action : 'response',
+															value : {
+																call : 'u_roomInvite',
+																result : 1,
+																room_id : room_id,
+																room_title : room_title,
+																members : []
+															}
+														};
+													}
+													break;
+													case 1:
+													{
+														ret = {
+															action : 'response',
+															value : {
+																call : 'u_roomInvite',
+																result : 1,
+																room_id : room_id,
+																room_title : room_title,
+																members : result2.data
+															}
+														};
+													}
+													break;
+												}
+												socket.json.emit('server_roomInvite', ret);
+
+												var ret1 = {
+													action : 'update',
+													value : {
+														room_id : room_id
+													}
+												};
+												for(var i in result2.data){
+													(function(i){
+														process.nextTick(function(){
+															if(online_user.has(result2.data[i].member_id)){
+																var target_info = online_user.get(result2.data[i].member_id);
+																io.to(target_info.socket_id).json.emit('server_room', ret1);
+															}
+														});
+													})(i);
+												}
+											});
+										}
+										break;
 									}
 								});
 							}
@@ -1313,7 +1487,8 @@ module.exports = function(io, online_user){
 									value : {
 										call : 'u_roomInvite',
 										result : 2,
-										room_id : room_id
+										room_id : room_id,
+										room_title : 'unknown'
 									}
 								};
 								socket.json.emit('server_roomInvite', ret);
@@ -1327,6 +1502,62 @@ module.exports = function(io, online_user){
 				{//reject room invitation
 					var room_id = msg.value.room_id;
 					var user_id = socket_ids.get(socket.id).user_id;
+
+					room_invite.read_hasRoomInvite({
+						room_id : room_id,
+						user_id : user_id
+					}, function(result){
+						switch(result.result){
+							case 0://no room
+							{
+								var ret = {
+									action : 'response',
+									value : {
+										call : 'd_roomInvite',
+										result : 0,
+										room_id : room_id,
+										room_title : 'unknown'
+									}
+								};
+								socket.json.emit('server_roomInvite', ret);
+							}
+							break;
+							case 1:
+							{
+								var room_title = result.data.room_title;
+
+								room_invite.delete_roomInvite({
+									room_id : room_id,
+									user_id : user_id
+								}, function(result1){
+									var ret = {
+										action : 'response',
+										value : {
+											call : 'd_roomInvite',
+											result : result1.result,
+											room_id : room_id,
+											room_title : room_title
+										}
+									};
+									socket.json.emit('server_roomInvite', ret);
+								});
+							}
+							break;
+							case 2://error
+							{
+								var ret = {
+									action : 'response',
+									value : {
+										call : 'd_roomInvite',
+										result : 2,
+										room_id : room_id,
+										room_title : 'unknown'
+									}
+								};
+							}
+							break;
+						}
+					});
 				}
 				break;
 			}

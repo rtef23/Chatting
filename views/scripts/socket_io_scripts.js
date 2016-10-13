@@ -216,6 +216,25 @@ $(function(){
 						}
 					}
 					break;
+					case 'r_room_single' :
+					{
+						switch(value.result){
+							case 0:
+							{
+								alert(value.room_title + ' 의 방을 읽어오는데 실패 했습니다.');
+							}
+							break;
+							case 1:
+							{
+								if(current_document == 'rooms'){
+									deleteRoom(value.room_id);
+									addRoom(value);
+								}
+							}
+							break;
+						}
+					}
+					break;
 					case 'r_room_all' : 
 					{
 						switch(value.result){
@@ -257,6 +276,18 @@ $(function(){
 				}
 			}
 			break;
+			case 'update':
+			{
+				var ret = {
+					action : 'read',
+					value : {
+						target : 'single',
+						room_id : msg.value.room_id
+					}
+				};
+				socket.json.emit('client_room', ret);
+			}
+			break;
 		}
 	});
 
@@ -278,6 +309,7 @@ $(function(){
 							case 1://success
 							{
 								alert(msg.value.target_id + ' 에게 방 초대 요청을 보냈습니다.');
+								resetInvID();
 							}
 							break;
 						}
@@ -297,6 +329,57 @@ $(function(){
 								renderLoginTab();
 								if(current_document == 'room_requests')
 									renderRoomInvite(msg.value.data);
+							}
+							break;
+						}
+					}
+					break;
+					case 'u_roomInvite':
+					{
+						switch(msg.value.result){
+							case 0:
+							{//fail accept room Invite
+								alert(msg.value.room_title + ' 방 참가에 실패 했습니다.');
+							}
+							break;
+							case 1:
+							{
+								room_invite_count--;
+								room_count++;
+								renderLoginTab();
+								if(current_document == 'rooms')
+									addRoom(msg.value);
+								if(current_document == 'room_requests')
+									deleteRoomInv(msg.value.room_id);
+							}
+							break;
+							case 2:
+							{//server error
+								alert('서버에 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+						}	
+					}
+					break;
+					case 'd_roomInvite':
+					{
+						switch(msg.value.result){
+							case 0://no room invite
+							{
+								alert(msg.value.room_title + ' 방 참가 요청 거절에 실패 했습니다.');
+							}
+							break;
+							case 1://success
+							{
+								room_invite_count--;
+								renderLoginTab();
+								if(current_document == 'room_requests')
+									deleteRoomInv(msg.value.room_id);
+							}
+							break;
+							case 2://server error
+							{
+								alert('서버에 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.');
 							}
 							break;
 						}

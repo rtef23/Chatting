@@ -175,10 +175,13 @@ exports.read_hasRoomInvite = function(form, callback){
 		if(rows.length >= 1)
 			result = {
 				result : 1,
-				room_title : rows[0].room_title
+				data : {
+					room_title : rows[0].room_title
+				}
 			};
 		else
 			result = {result : 0};
+		console.log(JSON.stringify(result));
 		callback(result);
 		return result;
 	});

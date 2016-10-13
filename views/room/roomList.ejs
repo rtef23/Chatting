@@ -93,6 +93,9 @@ div#rooms_panel{
 </div>
 
 <script>
+var resetInvID = function(){
+	$('div[id=inv_friend_id]').val('');
+};
 var renderRoomCol1 = function(data){
 	/*
 	input
@@ -150,12 +153,16 @@ var addRoom = function(data){
 	form = form.replace(/%room_title%/gi, data.room_title);
 	form = form.replace(/%number_member%/gi, data.members.length);
 	var member_str = '';
-	for(var i in data.members){
-		member_str += data.members[i].member_nick;
-		member_str += ' ';
-	}
+	if(data.members.length > 0)
+		for(var i in data.members){
+			member_str += data.members[i].member_nick;
+			member_str += ' ';
+		}
+	else
+		member_str = 'unknown';
 	form = form.replace(/%members%/gi, member_str);
 	$('div[id=rooms_list]').append(form);
+	$('[data-toggle="tooltip"]').tooltip();
 };
 
 var deleteRoom = function(room_id){
@@ -183,7 +190,6 @@ var renderRooms = function(data){
 				members : []
 			});
 	}
-	$('[data-toggle="tooltip"]').tooltip(); 
 };
 
 var onRoomClick = function(object){
@@ -204,7 +210,6 @@ var onInviteClick = function(target_object){
 	}
 
 	var target_id = target_object.children('#inv_friend_id').val();
-	alert('target_id : ' + target_id);
 	var ret = {
 		action : 'create',
 		value : {
