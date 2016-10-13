@@ -235,6 +235,25 @@ $(function(){
 						}
 					}
 					break;
+					case 'd_room':
+					{
+						switch(value.result){
+							case 0://fail
+							{
+								alert(value.room_title + ' 방 나가기에 실패 했습니다.');
+							}
+							break;
+							case 1://success
+							{
+								room_count--;
+								renderLoginTab();
+								alert(value.room_title + ' 방을 나갔습니다.');
+								deleteRoom(value.room_id);
+							}
+							break;
+						}
+					}
+					break;
 				}
 			}
 			break;
@@ -264,7 +283,7 @@ $(function(){
 						}
 					}
 					break;
-					case 'r_roomInvite':
+					case 'r_roomInvite_all':
 					{
 						switch(msg.value.result){
 							case 0://fail
@@ -288,11 +307,18 @@ $(function(){
 			break;
 			case 'update':
 			{
-				room_count++;
+				room_invite_count++;
 				renderLoginTab();
-				addRoomInv(msg.value);
+				if(current_document == 'room_requests')
+					addRoomInv(msg.value);
 			}
 			break;
+			case 'delete':
+			{
+				room_invite_count--;
+				renderLoginTab();
+				deleteRoomInv(msg.value.room_id);
+			}
 		}
 	});
 });

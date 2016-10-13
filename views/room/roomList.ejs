@@ -85,7 +85,9 @@ div#rooms_panel{
 			</font>
 		</div>
 		<div id='room_form_interface' style='float:right;width:20%;text-align:right;'>
-			<span class='glyphicon glyphicon-share' style='color:red;' />
+			<button type='button' onclick='javascript:leaveRoom("%room_id%");'>
+				<span class='glyphicon glyphicon-share' style='color:red;' />
+			</button>
 		</div>
 	</a>
 </div>
@@ -121,23 +123,43 @@ var checkRoomTitle = function(data){
 	return true;
 };
 
+var leaveRoom = function(room_id){
+	var ret = {
+		action : 'delete',
+		value : {
+			room_id : room_id
+		}
+	};
+	socket.json.emit('client_room', ret);
+};
+
 var addRoom = function(data){
+	/*
+	data{
+		room_id : d1,
+		room_title : d2,
+		members : [
+			{member_id : m1, member_nick : m'1},
+			{member_id : m2, member_nick : m'2},
+			...
+		]
+	}
+	*/
 	var form = $('div[id=room_form]').html();
 	form = form.replace(/%room_id%/gi, data.room_id);
 	form = form.replace(/%room_title%/gi, data.room_title);
-	if(data.joined_member.result == 0){
-		form = form.replace(/%number_member%/gi, 'can\'t read');
-		form = form.replace(/%members%/gi, 'can\'t read');
-	}else{
-		form = form.replace(/%number_member%/gi, data.joined_member.members.length);
-		var member_str = '';
-		for(var i in data.joined_member.members){
-			member_str += data.joined_member.members[i].member_nick;
-			member_str += ' ';
-		}
-		form = form.replace(/%members%/gi, member_str);
+	form = form.replace(/%number_member%/gi, data.members.length);
+	var member_str = '';
+	for(var i in data.members){
+		member_str += data.members[i].member_nick;
+		member_str += ' ';
 	}
+	form = form.replace(/%members%/gi, member_str);
 	$('div[id=rooms_list]').append(form);
+};
+
+var deleteRoom = function(room_id){
+	$('a[name=' + room_id + ']').remove();
 };
 
 var renderRooms = function(data){
@@ -148,7 +170,18 @@ var renderRooms = function(data){
 	par.append('<div id="rooms_list" style="width:100%;height:100%;overflow-y:scroll;background-color:white;" class="list-group"></div>');
 
 	for(var i in data){
-		addRoom(data[i]);
+		if(data[i].joined_member.result == 1)
+			addRoom({
+				room_id : data[i].room_id,
+				room_title : data[i].room_title,
+				members : data[i].joined_member.members
+			});
+		else
+			addRoom({
+				room_id : data[i].room_id,
+				room_title : data[i].room_title,
+				members : []
+			});
 	}
 	$('[data-toggle="tooltip"]').tooltip(); 
 };

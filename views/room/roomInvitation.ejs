@@ -20,21 +20,21 @@
 		<div id='invite_card' style='height:5%;'>
 			<div style='float:left;text-align:left;color:#0047b3;'>
 				<span class='badge'>
-					from.
+					From.
 				</span>
 				%from_nick%
 				<span class='badge'>
-					to.
+					Room Title.
 				</span>
 				%room_title%
 			</div>
 			<div style='float:right;text-align:right;'>
 				<input type='hidden' id='room-id' value='%room_id%'>
 				</input>
-				<button class='btn btn-success' onclick='javascript:roomInviteAccept($(this));'>
+				<button class='btn btn-success' onclick='javascript:roomInviteAccept("%room_id%");'>
 					Accept
 				</button>
-				<button class='btn btn-danger' onclick='javascript:roomInviteReject($(this));'>
+				<button class='btn btn-danger' onclick='javascript:roomInviteReject("%room_id%");'>
 					Reject
 				</button>
 			</div>
@@ -43,11 +43,25 @@
 </div>
 
 <script>
-var roomInviteAccept = function(object){
-
+var roomInviteAccept = function(room_id){
+	alert('accept room_id : ' + room_id);
+	var ret = {
+		action : 'update',
+		value : {
+			room_id : room_id
+		}
+	};
+	socket.json.emit('client_roomInvite', ret);
 };
-var roomInviteReject = function(object){
-
+var roomInviteReject = function(room_id){
+	alert('reject room_id : ' + room_id);
+	var ret = {
+		action : 'delete',
+		value : {
+			room_id : room_id
+		}
+	};
+	socket.json.emit('client_roomInvite', ret);
 };
 var addRoomInv = function(data){
 	var form = $('div[id=room_inv_card_format]').html();
@@ -57,6 +71,9 @@ var addRoomInv = function(data){
 	form = form.replace(/%room_title%/gi, data.room_title);
 	form = form.replace(/%from_id%/gi, data.from_id);
 	$('div[id=room_inv_list]').append(form);
+};
+var deleteRoomInv = function(room_id){
+	$('a[name=' + room_id + ']').remove();
 };
 var renderRoomInvite = function(data){
 	for(var i in data){

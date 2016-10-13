@@ -68,7 +68,7 @@ exports.read_userJoinedRooms = function(form, callback){
 		return result;
 	}
 
-	conn.query('select room_id, room_title from room_joined natural join chat_room where user_id=?', [form.id], function(err, rows){
+	conn.query('select room_id, room_title from room_joined natural join chat_room where user_id=? order by room_title', [form.id], function(err, rows){
 		if(err){
 			conn.end();
 			result = {
@@ -173,6 +173,45 @@ exports.read_userJoined = function(form, callback){
 		}else{
 			result = {result : 0};
 		}
+		callback(result);
+		return result;
+	});
+}
+
+exports.delete_leaveJoinedRoom = function(form, callback){
+	/*
+	input
+		{
+			room_id : d1,
+			user_id : d2
+		}
+	output
+		{
+			result :
+				0 : fail,
+				1 : success
+		}
+	*/
+	var conn = db.getConn();
+	var result;
+
+	if(!conn){
+		result = {result : 0};
+		callback(result);
+		return result;
+	}
+
+	conn.query('delete from room_joined where room_id=? and user_id=?', [
+		form.room_id, form.user_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {result : 1};
 		callback(result);
 		return result;
 	});

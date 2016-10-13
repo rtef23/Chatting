@@ -189,6 +189,8 @@ $(function(){
 		}
 	};
 	socket.json.emit('client_room', ret);
+	ret.value.target='all';
+	socket.json.emit('client_roomInvite', ret);
 
 	resetTab();
 	onIDClick();
