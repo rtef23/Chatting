@@ -8,7 +8,6 @@
 				<li id='home-tab' style='background-color:#0066ff;'><a onclick='javascript:onHomeClick();' style='color:white;'>Home</a></li>
 				<li id='profile-tab' style='background-color:#0066ff;'><a onclick='javascript:onProfileClick();' style='color:white;'>Profile</a></li>
 				<li id='friend-tab' style='background-color:#0066ff;'><a onclick='javascript:onFriendClick();' style='color:white;'>Friends</a></li>
-				<li id='room-tab' style='background-color:#0066ff;'><a onclick='javascript:onRoomClick();' style='color:white;'>Room</a></li>
 				<li id='chat-tab' style='background-color:#0066ff;'><a onclick='javascript:onChatClick();' style='color:white;'>Chat</a></li> 
 			</ul>
 			<ul class="nav navbar-nav navbar-right">
@@ -36,7 +35,6 @@
 		$('li[id=home-tab]').css('background-color', '#0066ff');
 		$('li[id=profile-tab]').css('background-color', '#0066ff');
 		$('li[id=friend-tab]').css('background-color', '#0066ff');
-		$('li[id=room-tab]').css('background-color', '#0066ff');
 		$('li[id=chat-tab]').css('background-color', '#0066ff');
 		$('li[id=logout-tab]').css('background-color', '#0066ff');
 	};
@@ -60,12 +58,6 @@
 		$('body[id=main_body] div[id=login-body]').append(getFriendSearchPanelForm());
 
 		renderFriendRequestList();
-	};
-	var onRoomClick = function(){
-		resetTab();
-		$('li[id=room-tab]').css('background-color', '#0047b3');
-		$('body[id=main_body] div[id=login-body]').empty();
-		//$('body[id=main_body] div[id=login-body]').append();
 	};
 	var onChatClick = function(){
 		resetTab();

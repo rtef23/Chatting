@@ -139,6 +139,29 @@ $(function(){
 						}
 					}
 					break;
+					case 'd_friend':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('친구 삭제에 실패 했습니다.');
+							}
+							break;
+							case 1:
+							{
+								var friends = user.get('friends');
+								friends.remove(msg.data.target);
+								deleteFriendList(msg.data.target);
+							}
+							break;
+							case 2:
+							{
+								alert('유효하지 않은 친구 삭제 요청입니다.');
+							}
+							break;
+						}
+					}
+					break;
 				}
 			}
 			break;
@@ -148,6 +171,13 @@ $(function(){
 				var friends = user.get('friends');
 				friends.put(msg.data.friend_id, data);
 				updateFriendList(friends.get(msg.data.friend_id));
+			}
+			break;
+			case 'delete':
+			{
+				var friends = user.get('friends');
+				friends.remove(msg.data.target);
+				deleteFriendList(msg.data.target);
 			}
 			break;
 		}

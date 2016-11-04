@@ -70,7 +70,7 @@
 				</table>
 			</div>
 			<div class='modal-footer' style='background-color:#0066ff;'>
-				<button class='btn btn-danger'>
+				<button class='btn btn-danger' onclick='javascript:onDeleteFriendClick("%friend_id%");' data-dismiss='modal'>
 					Delete Friend
 				</button>
 				<button class='btn btn-default' data-dismiss='modal'>
@@ -82,6 +82,14 @@
 </div>
 
 <script>
+var onDeleteFriendClick = function(target_id){
+	socket.json.emit('client_friend', {
+		action : 'delete',
+		data : {
+			target : target_id
+		}
+	});
+};
 var getFriendListForm = function(){
 	return $('div[id=friend-list-form]').html();
 };
@@ -132,14 +140,9 @@ var showFriendModal = function(fid){
 	$('div[id=friend-info-modal]').modal();
 };
 
-var deleteFriendList = function(data){
-	/*
-	data{
-		friend_id : d1
-	}
-	*/
-	$('body[id=main_body] div[id=main_panel_group] div[id=friend-list-panel] div[id=online-collapse] a[id=' + data.friend_id + ']').remove();
-	$('body[id=main_body] div[id=main_panel_group] div[id=friend-list-panel] div[id=offline-collapse] a[id=' + data.friend_id + ']').remove();
+var deleteFriendList = function(target_id){
+	$('body[id=main_body] div[id=main_panel_group] div[id=friend-list-panel] div[id=online-collapse] a[id=' + target_id + ']').remove();
+	$('body[id=main_body] div[id=main_panel_group] div[id=friend-list-panel] div[id=offline-collapse] a[id=' + target_id + ']').remove();
 };
 
 var updateFriendList = function(data){
@@ -151,7 +154,7 @@ var updateFriendList = function(data){
 		isOnline : d4
 	}
 	*/
-	deleteFriendList({friend_id : data.friend_id});
+	deleteFriendList(data.friend_id);
 	addFriendList(data);
 };
 

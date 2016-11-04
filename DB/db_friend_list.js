@@ -10,7 +10,7 @@ exports.read_isFriend = function(form){
 			id2 : d2
 		}
 	*/
-	var query = '(select * from friend_list where fid1=? and fid2=?) union (select * from friend_list where fid2=? and fid1=?)';
+	var query = '(select fid1, fid2 from friend_list where fid1=? and fid2=?) union (select fid1, fid2 from friend_list where fid1=? and fid2=?)';
 	return db.executeQuery(query, [
 		form.id1,
 		form.id2,
@@ -59,4 +59,16 @@ exports.create_friend = function(form){
 		fid1 : form.fid1,
 		fid2 : form.fid2
 	});
+}
+
+exports.delete_friend = function(form){
+	/*
+	input
+	{
+		id1 : d1,
+		id2 : d2
+	}
+	*/
+	var query = 'delete from friend_list where (fid1=? and fid2=?) or (fid1=? and fid2=?)';
+	return db.executeQuery(query, [form.id1, form.id2, form.id2, form.id1]);
 }

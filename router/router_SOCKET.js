@@ -104,6 +104,71 @@ module.exports = function(io, online_user){
 					}
 				}
 				break;
+				case 'delete':
+				{
+					/*
+					output
+						action : 'response',
+						about : 'd_friend',
+						result : 
+							0 : error
+							1 : success
+							2 : invalid request
+					*/
+					friend_list.read_isFriend({
+						id1 : req_id,
+						id2 : msg.data.target
+					}).then(function(result){
+						console.log('req_id : ' + req_id + '\ttarget_id : ' + msg.data.target);
+						console.log(JSON.stringify(result));
+						if(result.length > 0){
+							friend_list.delete_friend({
+								id1 : req_id,
+								id2 : msg.data.target
+							}).then(function(result1){
+								socket.json.emit('server_friend', {
+									action : 'response',
+									about : 'd_friend',
+									result : 1,
+									data : {
+										target : msg.data.target
+									}
+								});
+								if(online_user.has(msg.data.target)){
+									var target_sock = online_user.get(msg.data.target).socket_id;
+									io.to(target_sock).json.emit('server_friend', {
+										action : 'delete',
+										data : {
+											target : req_id
+										}
+									});
+								}
+							}, function(err1){
+								console.log(err1);
+								socket.json.emit('server_friend', {
+									action : 'response',
+									about : 'd_friend',
+									result : 0
+								});
+							});
+						}else{
+							//result.length == 0
+							socket.json.emit('server_friend', {
+								action : 'response',
+								about : 'd_friend',
+								result : 2
+							});
+						}
+					}, function(err){
+						console.log(err);
+						socket.json.emit('server_friend', {
+							action : 'response',
+							about : 'd_friend',
+							result : 0
+						});
+					});
+				}
+				break;
 			}
 		});
 		socket.on('client_friendRequest', function(msg){
