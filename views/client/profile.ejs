@@ -1,0 +1,43 @@
+<div id='user-profile-form' style='display:none;'>
+	<div class='panel panel-default' style='width:100%;height:100%;'>
+		<div class='panel-heading' style='height:15%;color:white;background-color:#0066ff;'>
+			<h3>Profile
+			</h3>
+		</div>
+		<div class='panel-body' style='height:70%;'>
+			<table class='table table-hover'>
+				<tbody>
+					<tr>
+						<td><B>ID</B></td>
+						<td>%user_id%</td>
+					</tr>
+					<tr>
+						<td><B>Nick Name</B></td>
+						<td>%user_nick%</td>
+					</tr>
+					<tr>
+						<td><B>Name</B></td>
+						<td>%user_name%</td>
+					</tr>
+					<tr>
+						<td><B>Create Date</B></td>
+						<td>%user_cdate%</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class='panel-footer' style='height:15%;color:white;background-color:#0066ff;'>
+		</div>
+	</div>
+</div>
+
+<script>
+	var getRenderedProfilePanelForm = function(){
+		var form = $('div[id=user-profile-form]').html();
+		form = form.replace(/%user_id%/g, user.get('user_id'));
+		form = form.replace(/%user_nick%/g, user.get('user_nick'));
+		form = form.replace(/%user_name%/g, user.get('user_name'));
+		form = form.replace(/%user_cdate%/g, transDate(user.get('user_cdate'), 'yyyy-mm-dd  HH:MM:SS'));
+		return form;
+	};
+</script>

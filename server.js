@@ -58,7 +58,8 @@ var getChatServerPort = function(){
 		Key : String which is user_id
 		Value : {
 			user_nick : d1,
-			socket_id : d'1
+			user_name : d'1,
+			socket_id : d''1
 		}
 */
 var online_users = new HashMap();

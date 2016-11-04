@@ -1,0 +1,66 @@
+<div style='display:none;' id='unlogin-tab-form'>
+	<div class='panel panel-default' id='unlogin-tab' style='width:60%;height:70%;margin-top:5%;margin-left:10%;'>
+		<div class='panel-heading' style='width:100%;height:15%;background-color:#0066ff;text-align:center;'>
+			<font style='color:white;'>
+				<h1>
+					Log-In
+				</h1>
+			</font>
+		</div>
+		<div class='panel-body' style='width:100%;height:75%;background-color:#e6f2ff;text-align:center;'>
+			<form class='form-horizontal' id='log-in-form'>
+				<div class="form-group">
+					<label class='control-label col-sm-2' for="id">ID :</label>
+					<div class="col-sm-4">
+						<input type="text" class="form-control" id="input-id" placeholder='enter ID here' />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class='control-label col-sm-2' for="pwd">Password :</label>
+					<div class="col-sm-4">
+						<input type="password" class="form-control" id="input-pwd" placeholder='enter PassWord here' />
+					</div>
+				</div>
+				<div class='form-group' class='col-sm-offset-4 col-sm-10'>
+					<button type="button" onclick='javascript:btn_createAccount();' class="btn btn-primary">
+						Create Account
+					</button>
+					<button type="button" onclick='javascript:btn_login_click();' class="btn btn-primary">
+						Log-In
+					</button>
+					<button type="button" class="btn btn-primary">
+						Find Account
+					</button>
+				</div>
+			</form>
+		</div>
+		<div class='panel-footer' style='width:100%;height:10%;background-color:#cce6ff;'>
+		</div>
+	</div>
+</div>
+<script>
+	var getUnloginPanelForm = function(){
+		return $('div[id=unlogin-tab-form]').html();
+	};
+	var btn_login_click = function(){
+		var id = $('input[id=input-id]').val();
+		var password = $('input[id=input-pwd]').val();
+
+		socket = io(getChatAddr());
+		$.getScript('/loadClientSocketScript').done(function(){
+			var ret = {
+				action : 'create',
+				data : {
+					id : id,
+					password : password
+				}
+			};
+			socket.json.emit('client_connect', ret);
+		}).fail(function(){
+			alert('can\'t read script\ntry again please');
+		});
+	};
+	var btn_createAccount = function(){
+		window.open('/create_member', '_blank', 'toolbar=yes,scrollbars=yes,resizable=yes,top=500,left=500,width=400,height=400');
+	};
+</script>

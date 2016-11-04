@@ -1,6 +1,7 @@
 //about db
+var Promise = require('promise');
 
-exports.getConn = function(){
+var getConn = function(){
 	/*
 	connect mysql function
 	*/
@@ -16,4 +17,34 @@ exports.getConn = function(){
 		}
 	});
 	return conn;
+};
+
+exports.executeQuery = function(query, form){
+	/*
+	input{
+		query : q,
+		form : data
+	}
+	output{
+		iff error
+			callback arguments length == 2
+		iff !error
+			callback arguments length == 1
+	}
+	*/
+	return new Promise(function(resolved,rejected){
+		var conn = getConn();
+
+		if(!conn){
+			return rejected('connection fail');
+		}
+
+		conn.query(query, form, function(err, rows){
+			conn.end();
+			if(err){
+				return rejected(err);
+			}
+			return resolved(rows);
+		});
+	});
 }

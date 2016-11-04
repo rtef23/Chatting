@@ -2,55 +2,18 @@
 var db = require('./db');
 var member = require('./db_member');
 
-exports.read_member = function(form, callback){
+exports.read_member = function(form){
 	/*
 		input
 			{
 				id : data1
 			}
-		output
-			{
-				result : 
-					0 : error
-					1 : if success in get info
-				,data : {
-					id : d1,
-					nickname : d2,
-					name : d3
-				}
-			}
 	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		conn.end();
-		result = {result : 0, data : {}};
-		callback(result);
-		return result;
-	}
-	conn.query("select id, nickname, name from member where id = ?", [form.id], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 0, data : {}};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		result = {
-			result : 1,
-			data : {
-				id : rows[0].id,
-				nickname : rows[0].nickname,
-				name : rows[0].name
-			}
-		};
-		callback(result);
-		return result;
-	});
+	var query = 'select id, nickname, name from member where id=?';
+	return db.executeQuery(query, [form.id]);
 }
 
-exports.update_member = function(form, callback){
+exports.update_member = function(form){
 	/*
 		update user information
 		input
@@ -59,38 +22,12 @@ exports.update_member = function(form, callback){
 				name : data2,
 				nickname : data3
 			}
-		output
-			{
-				result : 
-					0 : error
-					1 : success in updating
-			}
 	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		conn.end();
-		result = {result : 0};
-		callback(result);
-		return result;
-	}
-
-	conn.query("update member set nickname=?, name=? where id=?", [form.nickname, form.name, form.id], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 0};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		result = {result : 1};
-		callback(result);
-		return result;
-	});
+	var query = 'update member set nickname=?, name=? where id=?';
+	return db.executeQuery(query, [form.nickname, form.name, form.id]);
 }
 
-exports.is_ext_mem = function (form, callback){
+exports.read_extMember = function (form){
 	//check that there is member whose info matches in DB
 	/*
 	input 
@@ -98,82 +35,22 @@ exports.is_ext_mem = function (form, callback){
 			id : data1,
 			password : data2
 		}
-	output
-		{
-			result : 
-				0 : if there is no member
-				1 : if there same tuple which values equals to input
-				2 : error
-		}
 	*/
-	var conn = db.getConn();
-	var id = form.id;
-	var pass = form.password;
-	var result;
-
-	if(!conn){
-		conn.end();
-		result = {result : 2};
-		callback(result);
-		return result;
-	}
-	conn.query("select count(id) as cnt from member where id=? and password=?", [id, pass], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 2};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		if(rows[0].cnt == 1)
-			result = {result : 1};
-		else
-			result = {result : 0};
-		callback(result);
-		return result;
-	});
+	var query = 'select id, nickname, name, t2.create_date as cdate from member natural join (select user_id as id, create_date from member_meta) t2 where id=(select id from member where id=? and password=?)';
+	return db.executeQuery(query, [form.id, form.password]);
 }
-exports.is_ext_id = function(form, callback){
+
+exports.read_isExtID = function(form){
 	/*
 	input
 		{
 			id : data1
 		}
-	output
-		{
-			result : 
-				0 : if there is no id
-				1 : if there is id
-				2 : error
-		}
 	*/
-	var conn = db.getConn();
-	var result;
-	var id = form.id;
-
-	if(!conn){
-		conn.end();
-		result = {result : 2};
-		callback(result);
-		return result;
-	}
-	conn.query("select count(id) as cnt from member where id = ?", [id], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 2};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		if(rows[0].cnt == 1)
-			result = {result : 1};
-		else
-			result = {result : 0};
-		callback(result);
-		return result;
-	});
+	var query = 'select * from member where id = ?';
+	return db.executeQuery(query, [form.id]);
 }
-exports.create_member = function(form, callback){
+exports.create_member = function(form){
 	/*
 	create member
 	input
@@ -183,74 +60,46 @@ exports.create_member = function(form, callback){
 			password : data3,
 			name : data4
 		}
-	output
-		{
-			result : 
-				0 : error
-				1 : success in creating member
-		}
 	*/
-	var conn = db.getConn();
-	var result;
-
-	if(!conn){
-		conn.end();
-		result = {result : 0};
-		callback(result);
-		return result;
-	}
-	conn.query("insert into member set ?", {
+	var query = 'insert into member set ?';
+	return db.executeQuery(query, {
 		id : form.id,
 		nickname : form.nickname,
 		password : form.password,
 		name : form.name
-	}, function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 0};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		result = {result : 1};
-		callback(result);
-		return result;
 	});
 }
 
-exports.delete_member = function(form, callback){
+exports.delete_member = function(form){
 	/*
 	input
 	{
 		id : data1,
 		password : data2
 	}
-	output
+	*/
+	var query = 'delete from member where id=? and password=?';
+	return db.executeQuery(query, [form.id, form.password]);
+}
+
+exports.read_byNick = function(form){
+	/*
+	input
 	{
-		result : 
-			0 : fail in delete member or error
-			1 : success in delete member
+		nickname : d1
 	}
 	*/
-	var conn = db.getConn();
-	var result;
+	var query = 'select id, nickname, name from member where nickname = ?';
+	return db.executeQuery(query, [form.nickname]);
+}
 
-	if(!conn){
-		conn.end();
-		result = {result : 2};
-		callback(result);
-		return result;
+exports.read_byName = function(form){
+	/*
+	input
+	{
+		name : d1
 	}
-	conn.query('delete from member where id=? and password=?',[form.id, form.password], function(err, rows){
-		if(err){
-			conn.end();
-			result = {result : 2};
-			callback(result);
-			return result;
-		}
-		conn.end();
-		result = {result : 1};
-		callback(result);
-		return result;
-	});
+	*/
+	var query = 'select id, nickname, name from member where name = ?';
+	return db.executeQuery(query, [form.name]);
 }

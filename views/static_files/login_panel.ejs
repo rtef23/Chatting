@@ -1,0 +1,80 @@
+<div id='login-tab-form' style='display:none;'>
+	<div class='panel panel-default' style='width:60%;height:80%;margin-left:10%;margin-top:5%;float:left;'>
+		<div class="panel-heading navbar-default container-fluid" style='width:100%;height:15%;background-color:#0066ff;'>
+			<div class="navbar-header">
+				<a class="navbar-brand" style='color:#b3d1ff;'><B>Chatting</B></a>
+			</div>
+			<ul class="nav navbar-nav" style='height:100%;'>
+				<li id='home-tab' style='background-color:#0066ff;'><a onclick='javascript:onHomeClick();' style='color:white;'>Home</a></li>
+				<li id='profile-tab' style='background-color:#0066ff;'><a onclick='javascript:onProfileClick();' style='color:white;'>Profile</a></li>
+				<li id='friend-tab' style='background-color:#0066ff;'><a onclick='javascript:onFriendClick();' style='color:white;'>Friends</a></li>
+				<li id='room-tab' style='background-color:#0066ff;'><a onclick='javascript:onRoomClick();' style='color:white;'>Room</a></li>
+				<li id='chat-tab' style='background-color:#0066ff;'><a onclick='javascript:onChatClick();' style='color:white;'>Chat</a></li> 
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+				<li id='logout-tab' style='background-color:#0066ff;'><a style='color:white;' onclick='javascript:onLogOutClick();'><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+			</ul>
+		</div>
+		<div id='login-body' class='panel-body' style='width:100%;height:75%;background-color:#e6f2ff;'>
+		</div>
+		<div class='panel-footer' style='width:100%;height:10%;background-color:#cce6ff;'>
+		</div>
+	</div>
+</div>
+
+<% include ../static_files/chatting_home %>
+<% include ../client/profile %>
+<% include ../friend_manage/friend_request_list %>
+<% include ../friend_manage/friend_search %>
+
+<script>
+	var getLoginPanelForm = function(){
+		return $('div[id=login-tab-form]').html();
+	};
+
+	var resetTab = function(){
+		$('li[id=home-tab]').css('background-color', '#0066ff');
+		$('li[id=profile-tab]').css('background-color', '#0066ff');
+		$('li[id=friend-tab]').css('background-color', '#0066ff');
+		$('li[id=room-tab]').css('background-color', '#0066ff');
+		$('li[id=chat-tab]').css('background-color', '#0066ff');
+		$('li[id=logout-tab]').css('background-color', '#0066ff');
+	};
+	var onHomeClick = function(){
+		resetTab();
+		$('li[id=home-tab]').css('background-color', '#0047b3');
+		$('body[id=main_body] div[id=login-body]').empty();
+		$('body[id=main_body] div[id=login-body]').append(getHomePanelForm());
+	};
+	var onProfileClick = function(){
+		resetTab();
+		$('li[id=profile-tab]').css('background-color', '#0047b3');
+		$('body[id=main_body] div[id=login-body]').empty();
+		$('body[id=main_body] div[id=login-body]').append(getRenderedProfilePanelForm());
+	};
+	var onFriendClick = function(){
+		resetTab();
+		$('li[id=friend-tab]').css('background-color', '#0047b3');
+		$('body[id=main_body] div[id=login-body]').empty();
+		$('body[id=main_body] div[id=login-body]').append(getFriendRequestPanelForm());
+		$('body[id=main_body] div[id=login-body]').append(getFriendSearchPanelForm());
+
+		renderFriendRequestList();
+	};
+	var onRoomClick = function(){
+		resetTab();
+		$('li[id=room-tab]').css('background-color', '#0047b3');
+		$('body[id=main_body] div[id=login-body]').empty();
+		//$('body[id=main_body] div[id=login-body]').append();
+	};
+	var onChatClick = function(){
+		resetTab();
+		$('li[id=chat-tab]').css('background-color', '#0047b3');
+		$('body[id=main_body] div[id=login-body]').empty();
+		//$('body[id=main_body] div[id=login-body]').append();
+	};
+	var onLogOutClick = function(){
+		resetTab();
+		document.location = '/';
+	};
+</script>
