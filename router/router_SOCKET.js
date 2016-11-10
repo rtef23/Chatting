@@ -5,7 +5,6 @@ module.exports = function(io, online_user){
 	var friend_request = require('../DB/db_friend_request');
 	var chat_room = require('../DB/db_chat_room');
 	var room_joined = require('../DB/db_room_joined');
-	var room_invite = require('../DB/db_room_invite');
 	var HashMap = require('hashmap');
 
 	var crypto = require('crypto');

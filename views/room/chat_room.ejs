@@ -51,23 +51,30 @@
 		*/
 		var form = $('div[id=room-item-form]').html();
 		var friends = user.get('friends');
-		var room_name = '';
-
-		for(var i in data.members){
-			room_name += friends.get(data.members[i]).friend_nick;
-			if(i != data.members.length - 1)
-				room_name += ',';
-			if(room_name.length >= 10){
-				room_name += '...';
-				break;
-			}
-		}
+		var room_name = mkRoomName(data.members);
 
 		form = form.replace(/%room_id%/g, data.room_id);
 		form = form.replace(/%room_name%/g, room_name);
 		form = form.replace(/%num_member%/g, data.members.length);
 
 		$('body[id=main_body] div[id=main_panel_group] div[id=chat-panel] div.panel-body').append(form);
+	};
+	var mkRoomName = function(data){
+		var room_name = '';
+		for(var i in data){
+			if(friends.has(data[i])){
+				room_name += friends.get(data[i]).friend_nick;
+			}else{
+				room_name += 'Unknown';
+			}
+			if(i != data.length - 1)
+				room_name += ',';
+			if(room_name.length >= 15){
+				room_name += '...';
+				break;
+			}
+		}
+		return room_name;
 	};
 	var updateRooms = function(){
 		var rooms = user.get('rooms');
