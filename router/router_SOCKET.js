@@ -119,8 +119,6 @@ module.exports = function(io, online_user){
 						id1 : req_id,
 						id2 : msg.data.target
 					}).then(function(result){
-						console.log('req_id : ' + req_id + '\ttarget_id : ' + msg.data.target);
-						console.log(JSON.stringify(result));
 						if(result.length > 0){
 							friend_list.delete_friend({
 								id1 : req_id,
@@ -421,6 +419,36 @@ module.exports = function(io, online_user){
 				break;
 			}
 		});
+		
+		socket.on('client_room', function(msg){
+			if(!socket_ids.has(socket.id))
+				return;
+
+			var req_id = socket_ids.get(socket.id);
+
+			switch(msg.action){
+				case 'create':
+				{}
+				break;
+				case 'read':
+				{
+					switch(msg.data.target){
+						case 'all':
+						{
+
+						}
+						break;
+						case 'single':
+						{
+
+						}
+						break;
+					}
+				}
+				break;
+			}
+		});
+
 		socket.on('client_member', function(msg){
 			if(!socket_ids.has(socket.id))
 				return;
@@ -428,6 +456,68 @@ module.exports = function(io, online_user){
 			var req_id = socket_ids.get(socket.id);
 
 			switch(msg.action){
+				case 'update':
+				{
+					/*
+					output
+					{
+						action : 'response',
+						about : 'u_member',
+						result : 
+							0 : error
+							1 : success
+					}
+					*/
+					member.update_member({
+						id : req_id,
+						name : msg.data.name,
+						nickname : msg.data.nickname
+					}).then(function(result){
+						socket.json.emit('server_member', {
+							action : 'response',
+							about : 'u_member',
+							result : 1,
+							data : {
+								e_nick : msg.data.name,
+								e_name : msg.data.nickname
+							}
+						});
+
+						//send edited data to user's friends
+						friend_list.read_friends({
+							id : req_id
+						}).then(function(result1){
+							for(var i in result1){
+								(function(i){
+									process.nextTick(function(){
+										if(online_user.has(result1[i].friend_id)){
+											var target_sock = online_user.get(result1[i].friend_id).socket_id;
+											io.to(target_sock).json.emit('server_friend', {
+												action : 'update',
+												data : {
+													friend_id : req_id,
+													friend_nick : msg.data.nickname,
+													friend_name : msg.data.name,
+													isOnline : (online_user.has(req_id))?1:0
+												}
+											});
+											console.log('send to ' + result1[i].friend_id + '\ntarget_sock : ' + target_sock);
+										}
+									});
+								})(i);
+							}
+						}, function(err){
+							//log this error
+						});
+					}, function(err){
+						console.log(err);
+						socket.json.emit('server_member', {
+							action : 'response',
+							about : 'u_member',
+							result : 0
+						});
+					});
+				}
 				case 'read':
 				{
 					var data = msg.data;

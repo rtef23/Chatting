@@ -41,7 +41,7 @@ module.exports = function(app){
 				return;
 			}
 			res.writeHead(200, {'Content-Type':'text/javascript'});
-			res.end(data);
+			res.end(data.toString().replace(/<script>/g, '').replace(/<\/script>/g, ''));
 		});
 	});
 

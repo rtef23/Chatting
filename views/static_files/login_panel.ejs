@@ -25,6 +25,7 @@
 <% include ../client/profile %>
 <% include ../friend_manage/friend_request_list %>
 <% include ../friend_manage/friend_search %>
+<% include ../room/chat_room %>
 
 <script>
 	var getLoginPanelForm = function(){
@@ -63,7 +64,7 @@
 		resetTab();
 		$('li[id=chat-tab]').css('background-color', '#0047b3');
 		$('body[id=main_body] div[id=login-body]').empty();
-		//$('body[id=main_body] div[id=login-body]').append();
+		$('body[id=main_body] div[id=login-body]').append(getChatForm());
 	};
 	var onLogOutClick = function(){
 		resetTab();

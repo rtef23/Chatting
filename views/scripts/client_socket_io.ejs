@@ -1,3 +1,4 @@
+<script>
 $(function(){
 	//socket.off('server_friend');
 	socket.on('disconnect', function(){
@@ -37,6 +38,12 @@ $(function(){
 									}
 								});
 								socket.json.emit('client_friendRequest', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+								socket.json.emit('client_room', {
 									action : 'read',
 									data : {
 										target : 'all'
@@ -98,6 +105,25 @@ $(function(){
 					case 'r_member':
 					{
 						renderFriendSearch(msg.data);
+					}
+					break;
+					case 'u_member':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('프로필을 수정하는데 실패 했습니다.\n잠시 후 다시 시도해주세요.');
+							}
+							break;
+							case 1:
+							{
+								user.remove('user_nick');
+								user.remove('user_name');
+								user.put('user_nick', msg.data.e_nick);
+								user.put('user_name', msg.data.e_name);
+							}
+							break;
+						}
 					}
 					break;
 				}
@@ -169,8 +195,8 @@ $(function(){
 			{
 				var data = msg.data;
 				var friends = user.get('friends');
-				friends.put(msg.data.friend_id, data);
-				updateFriendList(friends.get(msg.data.friend_id));
+				friends.put(data.friend_id, data);
+				updateFriendList(friends.get(data.friend_id));
 			}
 			break;
 			case 'delete':
@@ -303,10 +329,28 @@ $(function(){
 	});
 	
 	socket.on('server_room', function(msg){
-		
-	});
+		switch(msg.action){
+			case 'create':
+			{
 
-	socket.on('server_roomInvite', function(msg){
-		
+			}
+			break;
+			case 'update':
+			{
+
+			}
+			break;
+			case 'delete':
+			{
+
+			}
+			break;
+			case 'response':
+			{
+
+			}
+			break;
+		}		
 	});
 });
+</script>

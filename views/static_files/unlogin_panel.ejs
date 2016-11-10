@@ -48,16 +48,15 @@
 
 		socket = io(getChatAddr());
 		$.getScript('/loadClientSocketScript').done(function(){
-			var ret = {
+			socket.json.emit('client_connect', {
 				action : 'create',
 				data : {
 					id : id,
 					password : password
 				}
-			};
-			socket.json.emit('client_connect', ret);
+			});
 		}).fail(function(){
-			alert('can\'t read script\ntry again please');
+			alert('스크립트를 로드할 수 없습니다.\n잠시 후 다시 시도해주세요.');
 		});
 	};
 	var btn_createAccount = function(){

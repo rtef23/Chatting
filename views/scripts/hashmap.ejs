@@ -6,7 +6,8 @@
     Map.prototype = {
         put : function(key, value){   
             this.map[key] = value;
-            size++;
+            if(!this.containsKey(key))
+                size++;
         },   
         get : function(key){   
             return this.map[key];

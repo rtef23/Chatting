@@ -23,7 +23,6 @@
 			user.put('friends', new Map());
 			user.put('friend_requests', new Map());
 			user.put('rooms', new Map());
-			user.put('room_requests', new Map());
 		</script>
 	</head>
 	<body id='main_body' style='width:100%;height:100%;background-color:#80bdff;'>
@@ -35,7 +34,7 @@
 	<% include ../static_files/unlogin_panel %>
 	<% include ../static_files/login_panel %>
 	<% include ../friend_list/friend_list %>
-	
+
 	<script text='text/javascript'>
 	var getChatAddr = function(){
 		return $('input[id=chat_addr]').val();
