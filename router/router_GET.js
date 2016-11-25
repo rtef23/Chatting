@@ -66,4 +66,15 @@ module.exports = function(app){
 			res.end(data, "binary");
 		});
 	});
+
+	app.get('/chatRoom', function(req, res){
+		/*
+			given room_id is base 64 url safe
+			to convert to base 64
+				1. replace '-' with '+'
+				2. replace '_' with '/'
+		*/
+		var room_id = req.query.room_id.replace(/\-/g, '\+').replace(/\_/g, '\/');
+		res.render('room/room', {room_id : room_id});
+	});
 }

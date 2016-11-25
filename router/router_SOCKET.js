@@ -4,8 +4,9 @@ module.exports = function(io, online_user){
 	var friend_list = require('../DB/db_friend_list');
 	var friend_request = require('../DB/db_friend_request');
 	var chat_room = require('../DB/db_chat_room');
-	var room_joined = require('../DB/db_room_joined');
-	var room_invite = require('../DB/db_room_invite');
+	var room_meta = require('../DB/db_room_meta');
+	var chat_log = require('../DB/db_chat_log');
+
 	var HashMap = require('hashmap');
 
 	var crypto = require('crypto');
@@ -428,14 +429,109 @@ module.exports = function(io, online_user){
 
 			switch(msg.action){
 				case 'create':
-				{}
+				{
+					var cur_time = new Date().format('yyyy-MM-dd hh:mm:ss');
+					var room_id = crypto.createHash('sha256').update(req_id + cur_time).digest('base64');
+
+					chat_room.create_room({
+						room_id : room_id
+					}).then(function(result){
+						var list = msg.data;
+						list.push(req_id);
+
+						var success_list = [];
+						var fail_list = [];
+
+						Promise.all(list.map(function(data){
+							return room_meta.create_roomMeta({
+								room_id : room_id,
+								user_id : data
+							}).then(function(result2){
+								success_list.push(data);
+							}, function(err2){
+								fail_list.push(data);
+							});
+						})).then(function(result1){
+							/*
+							result : 1
+								success in creating room
+								success in enrolling member
+							*/
+							socket.json.emit('server_room', {
+								action : 'response',
+								about : 'c_room',
+								result : 1,
+								data : {
+									room_id : room_id,
+									success_list : success_list,
+									fail_list : fail_list
+								}
+							});
+						}, function(err1){
+							/*
+							result : 0
+								success in creating room
+								fail in enrolling member
+							*/
+							socket.json.emit('server_room', {
+								action : 'response',
+								about : 'c_room',
+								result : 0,
+								data : {
+									room_id : room_id,
+									success_list : success_list,
+									fail_list : list
+								}
+							});
+						});
+					}, function(err){
+						/*
+						result : 2
+							fail in creating room
+							fail in enrolling member
+						*/
+						socket.json.emit('server_room', {
+							action : 'response',
+							about : 'c_room',
+							result : 2,
+							data : {
+								success_list : success_list,
+								fail_list : list
+							}
+						});
+					});
+				}
 				break;
 				case 'read':
 				{
 					switch(msg.data.target){
 						case 'all':
 						{
-
+							room_meta.read_roomByUser({
+								user_id : req_id
+							}).then(function(result){
+								Promise.all(result.map(function(data){
+									return room_meta.read_roomByRoom({
+										room_id : data.room_id
+									}).then(function(result1){
+										data.members = result1;
+									});
+								})).then(function(result2){
+									socket.json.emit('server_room', {
+										action : 'response',
+										about : 'r_room_all',
+										result : 1,
+										data : result
+									});
+								});
+							}, function(err){
+								socket.json.emit('server_room', {
+									action : 'response',
+									about : 'r_room_all',
+									result : 0,
+									data : {}
+								});
+							});
 						}
 						break;
 						case 'single':
@@ -618,6 +714,77 @@ module.exports = function(io, online_user){
 						break;
 					}
 				}
+				break;
+			}
+		});
+		socket.on('client_chat', function(msg){
+			if(!socket_ids.has(socket.id))
+				return;
+
+			var req_id = socket_ids.get(socket.id);
+
+			switch(msg.action){
+				case 'create':
+				{
+					chat_log.create_log({
+						room_id : msg.data.room_id,
+						owner : req_id,
+						msg : msg.data.msg,
+						time_stamp : msg.data.time_stamp
+					}).then(function(result){}, function(err){console.log(err)});
+
+					room_meta.read_roomByRoom({
+						room_id : msg.data.room_id
+					}).then(function(result){
+						for(var i in result){
+							if(online_user.has(result[i].user_id)){
+								var target_sock = online_user.get(result[i].user_id).socket_id;
+								io.to(target_sock).json.emit('server_chat', {
+									action : 'update',
+									data : {
+										room_id : msg.data.room_id,
+										talker : req_id,
+										msg : msg.data.msg,
+										time_stamp : msg.data.time_stamp
+									}
+								});
+							}
+						}
+					});
+				}
+				break;
+				case 'read':
+				{
+					chat_log.read_log({
+						room_id : msg.data.target_room
+					}).then(function(result){
+						socket.json.emit('server_chat', {
+							action : 'response',
+							about : 'r_chatlog',
+							result : 1,
+							data : {
+								target_room : msg.data.target_room,
+								log : result
+							}
+						});
+					}, function(err){
+						console.log(JSON.stringify(err));
+						socket.json.emit('server_chat', {
+							action : 'response',
+							about : 'r_chatlog',
+							result : 0,
+							data : {
+								target_room : msg.data.target_room
+							}
+						});
+					});
+				}
+				break;
+				case 'update':
+				{}
+				break;
+				case 'delete':
+				{}
 				break;
 			}
 		});
