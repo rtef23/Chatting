@@ -1,3 +1,6 @@
+drop table chat_log;
+drop table room_meta;
+drop table chat_room;
 drop table member_meta;
 drop table friend_list;
 drop table friend_request;
@@ -12,16 +15,16 @@ create table member (
 );
 
 create table friend_list(
-	fid1 char(30),
-	fid2 char(30),
+	fid1 char(30) not null,
+	fid2 char(30) not null,
 	foreign key(fid1) references member(id) on delete cascade on update cascade,
 	foreign key(fid2) references member(id) on delete cascade on update cascade,
 	primary key(fid1, fid2)
 );
 
 create table friend_request(
-	from_id char(30),
-	to_id char(30),
+	from_id char(30) not null,
+	to_id char(30) not null,
 	request_date datetime not null,
 	foreign key(from_id) references member(id) on delete cascade on update cascade,
 	foreign key(to_id) references member(id) on delete cascade on update cascade,
@@ -33,4 +36,26 @@ create table member_meta(
 	last_login datetime default null,
 	create_date datetime not null,
 	foreign key(user_id) references member(id) on delete cascade on update cascade
+);
+
+create table chat_room(
+	room_id char(64),
+	primary key(room_id)
+);
+
+create table room_meta(
+	room_id char(64) not null,
+	user_id char(30) not null,
+	primary key(room_id, user_id),
+	foreign key(room_id) references chat_room(room_id) on delete cascade on update cascade,
+	foreign key(user_id) references member(id) on delete cascade on update cascade
+);
+
+create table chat_log(
+	room_id char(64) not null,
+	msg char(255),
+	owner_id char(30) not null,
+	time_stamp datetime not null,
+	foreign key(room_id) references chat_room(room_id) on delete cascade on update cascade,
+	foreign key(owner_id) references member(id) on update cascade
 );

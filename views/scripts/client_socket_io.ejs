@@ -1,8 +1,18 @@
 <script>
 $(function(){
 	//socket.off('server_friend');
+	$(window).on("beforeunload", function(){
+		var openedWindow = user.get('openedChildWindow');
+		openedWindow.forAll(function(childwindow){
+			childwindow.close();
+		});
+	});
 	socket.on('disconnect', function(){
 		alert('연결이 종료 되었습니다.');
+		var openedWindow = user.get('openedChildWindow');
+		openedWindow.forAll(function(childwindow){
+			childwindow.close();
+		});
 		document.location = '/';
 	});
 
@@ -104,7 +114,18 @@ $(function(){
 				switch(msg.about){
 					case 'r_member':
 					{
-						renderFriendSearch(msg.data);
+						switch(cur_page){
+							case 'chat':
+							{
+								renderFriendSearch(msg.data);
+							}
+							break;
+							case 'friends':
+							{
+								renderInvMemSearch(msg.data);
+							}
+							break;
+						}
 					}
 					break;
 					case 'u_member':
@@ -259,7 +280,7 @@ $(function(){
 										request_date : msg.data[i].request_date
 									});
 								}
-								renderFriendRequestList();
+								//renderFriendRequestList();
 							}
 							break;
 						}
@@ -347,10 +368,101 @@ $(function(){
 			break;
 			case 'response':
 			{
+				switch(msg.about){
+					case 'c_room':
+					{
+						alert(JSON.stringify(msg));
+					}
+					break;
+					case 'r_room_all':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('서버로부터 방 정보를 읽어오는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+							case 1:
+							{
+								user.put('rooms', new Map());
+								var rooms = user.get('rooms');
 
+								for(var i in msg.data){
+									rooms.put(msg.data[i].room_id, {
+										room_id : msg.data[i].room_id,
+										members : msg.data[i].members
+									});
+								}
+							}
+							break;
+						}
+					}
+					break;
+				}
 			}
 			break;
 		}		
+	});
+	socket.on('server_chat', function(msg){
+		switch(msg.action){
+			case 'create':
+			{}
+			break;
+			case 'read':
+			{}
+			break;
+			case 'update':
+			{
+				var openedWindows = user.get('openedChildWindow');
+
+				if(openedWindows.containsKey(msg.data.room_id)){
+					var target_room = openedWindows.get(msg.data.room_id);
+					target_room.addMessage({
+						user_info : msg.data.talker,
+						msg : msg.data.msg,
+						time_stamp : transDate(msg.data.time_stamp, 'yyyy-mm-dd HH:MM:SS')
+					});
+				}
+			}
+			break;
+			case 'delete':
+			{}
+			break;
+			case 'response':
+			{
+				switch(msg.about){
+					case 'r_chatlog':
+					{
+						switch(msg.result){
+							case 1:
+							{
+								var openedWindows = user.get('openedChildWindow');
+
+								if(openedWindows.containsKey(msg.data.target_room)){
+									var target_room = openedWindows.get(msg.data.target_room);
+
+									for(var i in msg.data.log){
+										target_room.addMessage({
+											user_info : msg.data.log[i].owner_id,
+											msg : msg.data.log[i].msg,
+											time_stamp : transDate(msg.data.log[i].time_stamp, 'yyyy-mm-dd HH:MM:SS')
+										});
+									}
+								}
+							}
+							break;
+							case 0:
+							{
+								alert('채팅 목록을 읽어오는데 실패 했습니다.\n다시 시도해 주세요.');
+							}
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+		}
 	});
 });
 </script>

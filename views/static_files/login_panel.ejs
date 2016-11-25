@@ -52,6 +52,7 @@
 		$('body[id=main_body] div[id=login-body]').append(getRenderedProfilePanelForm());
 	};
 	var onFriendClick = function(){
+		cur_page = 'friends';
 		resetTab();
 		$('li[id=friend-tab]').css('background-color', '#0047b3');
 		$('body[id=main_body] div[id=login-body]').empty();
@@ -61,10 +62,12 @@
 		renderFriendRequestList();
 	};
 	var onChatClick = function(){
+		cur_page = 'chat';
 		resetTab();
 		$('li[id=chat-tab]').css('background-color', '#0047b3');
 		$('body[id=main_body] div[id=login-body]').empty();
 		$('body[id=main_body] div[id=login-body]').append(getChatForm());
+		updateRooms();
 	};
 	var onLogOutClick = function(){
 		resetTab();

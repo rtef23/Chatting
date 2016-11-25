@@ -1,5 +1,5 @@
 <div id='chat-panel-form' style='display:none;'>
-	<div id='chat-panel' class='panel panel-default' style='width:20%;height:100%;'>
+	<div id='chat-panel' class='panel panel-default' style='width:100%;height:100%;'>
 		<div class='panel-heading' style='height:15%;color:white;background-color:#0066ff;'>
 			<h3>
 				Rooms
@@ -8,13 +8,17 @@
 		<div class='panel-body list-group' style='height:70%;overflow-y:scroll;'>
 		</div>
 		<div class='panel-footer' style='height:15%;color:white;background-color:#0066ff;'>
+			<button type='button' class='btn btn-info btn-sm' onclick='javascript:onNewRoomClick();'>
+				New Room
+			</button>
 		</div>
 	</div>
 </div>
 <div id='room-item-form' style='display:none;'>
-	<a class='list-group-item' id='%room_id%'>
+	<a class='list-group-item' id='%room_id%' style='width:100%;' onclick='javascript:openNewRoom("%room_id%");'>
 		%room_name%
 		<span class='badge'>
+			<span class="glyphicon glyphicon-user"></span>
 			%num_member%
 		</span>
 	</a>
@@ -32,7 +36,133 @@
 		</div>
 	</div>
 </div>
+
+<div id='room-create-modal' class='modal fade modal-lg' role='dialog'>
+	<div class='modal-dialog' style='height:130%;'>
+		<div class='modal-content'>
+			<div class='modal-header' style='height:5%;background-color:#0066ff;color:white;'>
+				<B>Invite Your Friends</B>
+				<button type='button' class='close' data-dismiss='modal'>
+					&times;
+				</button>
+			</div>
+			<div class='modal-body' style='height:90%;'>
+				<div class='panel' style='height:100%;'>
+					<div class='panel-body' style='height:90%;'>
+						<div class='panel' style='height:35%;'>
+							<div class='panel-heading' style='background-color:#0066ff;color:white;height:20%;'>
+								<B>
+									Online Friend
+								</B>
+							</div>
+							<div id='room-friend-list' class='panel-footer list-group' style='overflow-y:scroll;height:80%;'>
+							</div>
+						</div>
+						<div class='panel' style='height:35%;'>
+							<div class='panel-heading' style='background-color:#0066ff;color:white;height:20%;'>
+								<B>
+									Search & Invite
+								</B>
+							</div>
+							<div class='panel-footer' style='height:80%;'>
+								<form class='form-inline' style='height:20%;'>
+									<div class="form-group">
+										<label for="search-condition">Search Cond. </label>
+										<select class="form-control" id="search-condition">
+											<option>search by ID</option>
+											<option>search by Name</option>
+											<option>search by Nick Name</option>
+										</select>
+									</div>
+									<input type='input' placeholder='enter data here'>
+									</input>
+									<button class='btn btn-info btn-sm' type='button'>
+										Search
+									</button>
+								</form>
+								<div class='panel' style='height:70%;width:100%;background-color:white;'>
+									<div id='search-list' class='panel-body list-group-item' style='height:100%;overflow-y:scroll;'>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class='panel' style='height:30%;'>
+							<div class='panel-heading' style='height:20%;background-color:#0066ff;color:white;'>
+								<B>
+									Invite Member
+								</B>
+							</div>
+							<div class='panel-footer' style='height:80%;'>
+								<div id='added-member-list' class='panel list-group' style='height:80%;background-color:white;overflow-y:scroll;'>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class='panel-footer' style='height:10%;text-align:center;background-color:white;'>
+						<button type='button' class='btn btn-sm btn-info' onclick='javascript:createRoom();'>
+							Create
+						</button>
+						<button type='button' class='btn btn-sm btn-danger' data-dismiss='modal'>
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class='modal-footer' style='background-color:#0066ff;color:white;height:5%;'>
+			</div>
+		</div>
+	</div>
+</div>
+<div id='room-friend-item' style='display:none;'>
+	<a id='%friend_id%' class='list-group-item' style='width:100%;'>
+		<table style='width:100%;'>
+			<tr style='width:100%;'>
+				<td style='width:80%;'>
+					<span class='label label-info'>
+						ID
+					</span>
+					&nbsp;%friend_id%
+					<span class='label label-info'>
+						Nickname
+					</span>
+					&nbsp;%friend_nick%
+					<span class='label label-info'>
+						Name
+					</span>
+					&nbsp;%friend_name%
+				</td>
+				<td style='width:10%;'>
+					<button class='btn btn-success btn-sm' onclick='javascript:addInviteList("%friend_id%");'>
+						Add
+					</button>
+				</td>
+			</tr>
+		</table>
+	</a>
+</div>
+
+<div id='invite-id-item' style='display:none;'>
+	<a class='list-group-item' id='%invite_id%' style='width:100%;height:35%;'>
+		<div style='width:100%;height:100%;'>
+			<div style='text-align:left;float:left;'>
+				<span class='label label-info'>
+					Invite ID
+				</span>
+				&nbsp;%invite_id%
+			</div>
+			<div style='text-align:right;float:right;'>
+				<button class='btn btn-sm btn-danger' type='button' onclick='javascript:removeInviteList("%invite_id%");'>
+					Remove
+				</button>
+			</div>
+		</div>
+	</a>
+</div>
+
 <script>
+	var invite_list;
+	var cur_modal;
+
 	var getChatForm = function(){
 		return $('div[id=chat-panel-form]').html();
 	};
@@ -45,13 +175,12 @@
 		{
 			room_id : d1,
 			members : [
-				{friend_id : d3},...
+				{user_id : d3},...
 			]
 		}
 		*/
 		var form = $('div[id=room-item-form]').html();
-		var friends = user.get('friends');
-		var room_name = mkRoomName(data.members);
+		var room_name = buildRoomName(data.members);
 
 		form = form.replace(/%room_id%/g, data.room_id);
 		form = form.replace(/%room_name%/g, room_name);
@@ -59,19 +188,23 @@
 
 		$('body[id=main_body] div[id=main_panel_group] div[id=chat-panel] div.panel-body').append(form);
 	};
-	var mkRoomName = function(data){
+	var buildRoomName = function(data){
+		var friends = user.get('friends');
 		var room_name = '';
 		for(var i in data){
-			if(friends.has(data[i])){
-				room_name += friends.get(data[i]).friend_nick;
+			if(friends.containsKey(data[i].user_id)){
+				room_name += friends.get(data[i].user_id).friend_nick;
 			}else{
-				room_name += 'Unknown';
+				if(user.get('user_id') != data[i].user_id)
+					room_name += 'Unknown';
+				else
+					room_name += user.get('user_nick');
 			}
-			if(i != data.length - 1)
-				room_name += ',';
+			if(i < data.length - 1)
+				room_name += ', ';
 			if(room_name.length >= 15){
 				room_name += '...';
-				break;
+				return room_name;
 			}
 		}
 		return room_name;
@@ -79,5 +212,108 @@
 	var updateRooms = function(){
 		var rooms = user.get('rooms');
 		rooms.forAll(addRoom);
+	};
+	var initializeRoomModal = function(){
+		var friends = user.get('friends');
+
+		$('#room-friend-list').empty();
+		$('#added-member-list').empty();
+
+		friends.forAll(addRenderedRoomFriendItem);
+	};
+	var addRenderedRoomFriendItem = function(data){
+		/*
+		input
+		{
+			{friend_id : d4, friend_nick : d5, friend_name : d6, isOnline : d7}
+		}
+		*/
+		// if(data.isOnline == 0)
+		// 	return;
+		var form = $('#room-friend-item').html();
+		form = form.replace(/%friend_id%/g, data.friend_id);
+		form = form.replace(/%friend_nick%/g, data.friend_nick);
+		form = form.replace(/%friend_name%/g, data.friend_name);
+
+		$('#room-friend-list').append(form);
+	};
+	var onNewRoomClick = function(){
+		initializeRoomModal();
+		invite_list = [];
+		cur_modal = $('#room-create-modal').modal();
+	};
+	var addInviteList = function(target_id){
+		for(var i in invite_list)
+			if(invite_list[i] == target_id)
+				return;
+		invite_list.push(target_id);
+		cur_modal.find('#added-member-list').append($('div[id=invite-id-item]').html().replace(/%invite_id%/g, target_id));
+	};
+	var removeInviteList = function(target_id){
+		var i = 0;
+		for(i in invite_list)
+			if(invite_list[i] == target_id)
+				break;
+		invite_list.splice(i, 1);
+		cur_modal.find('#added-member-list').find('a[id=' + target_id + ']').remove();
+	};
+	var createRoom = function(){
+		socket.json.emit('client_room', {
+			action : 'create',
+			data : invite_list
+		});
+	};
+	var renderInvMemSearch = function(data){
+
+	};
+	var openNewRoom = function(room_id){
+		var openedWindow = user.get('openedChildWindow');
+		if(openedWindow.containsKey(room_id)){
+			openedWindow.get(room_id).focus();
+			return;
+		}
+		var target_url = '/chatRoom?room_id=';
+		//convert room_id (base 64 encoding) to room_id (base 64 url safe)
+		target_url = target_url + room_id.replace(/\+/g, '-').replace(/\//g, '_');
+		var tmpwindow = window.open(target_url, room_id, 'width=800, height=500');
+		
+		openedWindow.put(room_id, tmpwindow);
+	};
+	var requestChatLog = function(room_id){
+		/*
+		this function called by child window
+		*/
+		socket.json.emit('client_chat', {
+			action : 'read',
+			data : {
+				target_room : room_id
+			}
+		});
+	};
+	var closeChildWindow = function(room_id){
+		/*
+		this function called by child window
+		*/
+		var openedWindow = user.get('openedChildWindow');
+		openedWindow.remove(room_id);
+	};
+	var sendMsg = function(data){
+		/*
+		this function called by child window
+		data
+		{
+			room_id : d1,
+			msg : d2,
+			time_stamp : d3
+		}			
+		*/
+		socket.json.emit('client_chat', {
+			action : 'create',
+			data : {
+				room_id : data.room_id,
+				msg : data.msg,
+				time_stamp : data.time_stamp
+			}
+		});
 	};
 </script>
