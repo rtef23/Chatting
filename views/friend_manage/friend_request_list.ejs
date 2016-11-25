@@ -1,0 +1,87 @@
+<div id='friend-request-list-form' style='display:none;'>
+	<div id='friend-request-list-panel' class='panel panel-default' style='width:45%;height:100%;float:left;margin-left:3%;'>
+		<div class='panel-heading' style='background-color:#0066ff;height:15%;'>
+			<h3 style='color:white;'>
+				Friend Requests
+			</h3>
+		</div>
+		<div class='panel-body list-group' style='overflow-y:scroll;height:70%;'>
+		</div>
+		<div class='panel-footer' style='background-color:#0066ff;height:15%;'>
+		</div>
+	</div>
+</div>
+<div id='friend-request-item-form' style='display:none;'>
+	<a class='list-group-item' id='%from_id%'>
+		<div>
+			<div>
+				<div style='text-align:left;'>
+					<span class='label label-info'>
+						From id
+					</span>
+					&nbsp;%from_id%
+				</div>
+				<div style='text-align:left;'>
+					<span class='label label-info'>
+						From nickname
+					</span>
+					&nbsp;%from_nick%
+				</div>
+				<div style='text-align:left;'>
+					<span class='label label-info'>
+						From Name
+					</span>
+					&nbsp;%from_name%
+				</div>
+				<div style='text-align:left;'>
+					<span class='label label-info'>
+						Request date
+					</span>
+					&nbsp;%request_date%
+				</div>
+			</div>
+			<hr>
+			<div>
+				<button type='button' class='btn btn-success btn-sm' onclick='javascript:onAcceptClick("%from_id%");'>Accept</button>
+				<button type='button' class='btn btn-danger btn-sm' onclick='javascript:onRejectClick("%from_id%");'>Reject</button>
+			</div>
+		</div>
+	</a>
+</div>
+<script>
+	var getFriendRequestPanelForm = function(){
+		return $('div[id=friend-request-list-form]').html();
+	};
+	var renderFriendRequestList = function(){
+		var friend_request = user.get('friend_requests');
+		$('body[id=main_body] div[id=main_panel_group] div[id=friend-request-list-panel] div.panel-body').empty();
+		friend_request.forAll(addFriendRequestItem);
+	};
+	var addFriendRequestItem = function(data){
+		var form = $('div[id=friend-request-item-form]').html();
+		form = form.replace(/%from_id%/g, data.from_id);
+		form = form.replace(/%from_nick%/g, data.from_nick);
+		form = form.replace(/%from_name%/g, data.from_name);
+		form = form.replace(/%request_date%/g, transDate(data.request_date, 'yyyy-mm-dd HH:MM'));
+		$('body[id=main_body] div[id=main_panel_group] div[id=friend-request-list-panel] div.panel-body').append(form);
+	};
+	var removeFriendRequestItem = function(target_id){
+		$('body[id=main_body] div[id=main_panel_group] div[id=friend-request-list-panel] div.panel-body a[id=' + target_id + ']').remove();
+	};
+	var onAcceptClick = function(target_id){
+		socket.json.emit('client_friendRequest', {
+			action : 'update',
+			data : {
+				target : target_id
+			}
+		});
+	};
+	var onRejectClick = function(target_id){
+		socket.json.emit('client_friendRequest', {
+			action : 'delete',
+			data : {
+				target : target_id
+			}
+		});
+	};
+</script>

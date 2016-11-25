@@ -1,1022 +1,765 @@
-module.exports = function(io, client_socket_ids){
+module.exports = function(io, online_user){
 	var member = require('../DB/db_member');
-	var mem_meta = require('../DB/db_member_meta');
+	var member_meta = require('../DB/db_member_meta');
 	var friend_list = require('../DB/db_friend_list');
+	var friend_request = require('../DB/db_friend_request');
 	var chat_room = require('../DB/db_chat_room');
 	var room_joined = require('../DB/db_room_joined');
 	var room_invite = require('../DB/db_room_invite');
+	var HashMap = require('hashmap');
 
 	var crypto = require('crypto');
 
-	var onInvalidConnect = function(invalid_sock){
-		var ret = {
-			action : 'delete',
-			value : {
-				call : 'invalid_connect'
-			}
-		};
-		invalid_sock.json.emit('server_connect', ret);
-	};
+	/*
+	input
+		Key : String(64 characters) which is socket id
+		Value : {
+			user_id : d1
+		}
+	*/
+	var socket_ids = new HashMap();
 
 	io.on('connect', function(socket){
-		socket.on('client_connect', function(msg){
-			//client connect
+		socket.on('disconnect', function(){
+			if(!socket_ids.has(socket.id))
+				return;
+			
+			var target_id = socket_ids.get(socket.id);
+			var target_info = online_user.get(target_id);
+
+			var promise = friend_list.read_friends({
+				id : target_id
+			});
+
+			promise.then(function(result){
+				//success on read friends
+				var ret = {
+					action : 'update',
+					data : {
+						friend_id : target_id,
+						friend_nick : target_info.user_nick,
+						friend_name : target_info.user_name,
+						isOnline : 0
+					}
+				};
+				for(var i in result){
+					(function(i){
+						process.nextTick(function(){
+							if(online_user.has(result[i].friend_id)){
+								var target_sock_id = online_user.get(result[i].friend_id).socket_id;
+								io.to(target_sock_id).json.emit('server_friend', ret);
+							}
+						});
+					})(i);
+				}
+			}, function(err){
+				//error on read friends
+
+			});
+			socket_ids.remove(socket.id);
+			online_user.remove(target_id);
+		});
+		socket.on('client_friend', function(msg){
+			if(!socket_ids.has(socket.id))
+				return;
+
+			var req_id = socket_ids.get(socket.id);
+
+			switch(msg.action){
+				case 'read':
+				{
+					if(msg.data.target == 'all'){
+						var promise = friend_list.read_friendsWithStatus({
+							id : req_id
+						});
+
+						promise.then(function(result){
+							for(var i in result){
+								if(online_user.has(result[i].friend_id)){
+									result[i].isOnline = 1;
+								}else{
+									result[i].isOnline = 0;
+								}
+							}
+							socket.json.emit('server_friend', {
+								action : 'response',
+								about : 'r_friend_all',
+								data : {
+									result : 1,
+									data : result
+								}
+							});
+						}, function(err){
+							console.err(err);
+							socket.json.emit('server_friend', {
+								action : 'response',
+								about : 'r_friend_all',
+								data : {
+									result : 0
+								}
+							});
+						});
+					}else{
+
+					}
+				}
+				break;
+				case 'delete':
+				{
+					/*
+					output
+						action : 'response',
+						about : 'd_friend',
+						result : 
+							0 : error
+							1 : success
+							2 : invalid request
+					*/
+					friend_list.read_isFriend({
+						id1 : req_id,
+						id2 : msg.data.target
+					}).then(function(result){
+						if(result.length > 0){
+							friend_list.delete_friend({
+								id1 : req_id,
+								id2 : msg.data.target
+							}).then(function(result1){
+								socket.json.emit('server_friend', {
+									action : 'response',
+									about : 'd_friend',
+									result : 1,
+									data : {
+										target : msg.data.target
+									}
+								});
+								if(online_user.has(msg.data.target)){
+									var target_sock = online_user.get(msg.data.target).socket_id;
+									io.to(target_sock).json.emit('server_friend', {
+										action : 'delete',
+										data : {
+											target : req_id
+										}
+									});
+								}
+							}, function(err1){
+								console.log(err1);
+								socket.json.emit('server_friend', {
+									action : 'response',
+									about : 'd_friend',
+									result : 0
+								});
+							});
+						}else{
+							//result.length == 0
+							socket.json.emit('server_friend', {
+								action : 'response',
+								about : 'd_friend',
+								result : 2
+							});
+						}
+					}, function(err){
+						console.log(err);
+						socket.json.emit('server_friend', {
+							action : 'response',
+							about : 'd_friend',
+							result : 0
+						});
+					});
+				}
+				break;
+			}
+		});
+		socket.on('client_friendRequest', function(msg){
+			if(!socket_ids.has(socket.id))
+				return;
+
+			var req_id = socket_ids.get(socket.id);
+
 			switch(msg.action){
 				case 'create':
 				{
 					/*
 					output
-						{
-							action : 'response',
-							value : {
-								call : 'c_connect',
-								result : 
-									0 : no member
-									1 : exist member, not online
-									2 : exist member, online 
-									3 : error
-							}
-						}
+					{
+						action : 'response',
+						about : 'c_friendRequest',
+						result : 
+							0 : error
+							1 : success
+							2 : invalid friend request
+							3 : already exist friend request
+					}
 					*/
-					var id = msg.value.id.trim().toLowerCase();
-					var password = msg.value.password.trim().toLowerCase();
-					member.is_ext_mem({
-						id : id,
-						password : password
-					}, function(result){
-						switch(result.result){
-							case 0://no member
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'c_connect',
-										result : 0
-									}
-								};
-								socket.json.emit('server_connect', ret);
-							}
-							return;
-							case 1://ext member
-							{
-								mem_meta.member_meta_isOnline({
-									id : id
-								}, function(result1){
-									switch(result1.result){
-										case 0://not online
-										{
-											mem_meta.update_memberMetaOnLogin({
-												id : id
-											}, function(result2){
-												switch(result2.result){
-													case 0://fail log this info
-													break;
-													case 1://success
-													client_socket_ids.set(id, socket.id);//enroll this client at server client table
-													socket.user_id = id;
-													break;
+					if(req_id == msg.data.target){
+						socket.json.emit('server_friendRequest', {
+							action : 'response',
+							about : 'c_friendRequest',
+							result : 2
+						});
+						return;
+					}
+
+					friend_request.read_checkFriendRequest({
+						id1 : req_id,
+						id2 : msg.data.target
+					}).then(function(result){
+						if(result.length > 0){
+							socket.json.emit('server_friendRequest', {
+								action : 'response',
+								about : 'c_friendRequest',
+								result : 3
+							});
+							return;		
+						}else{
+							friend_list.read_isFriend({
+								id1 : req_id,
+								id2 : msg.data.target
+							}).then(function(result1){
+								if(result1.length > 0){
+									socket.json.emit('server_friendRequest', {
+										action : 'response',
+										about : 'c_friendRequest',
+										result : 3
+									});
+									return;			
+								}else{
+									var cdate = new Date().format('yyyy-MM-dd HH:mm:ss');
+									friend_request.create_friendRequest({
+										from_id : req_id,
+										to_id : msg.data.target,
+										request_date : cdate
+									}).then(function(result2){
+										socket.json.emit('server_friendRequest', {
+											action : 'response',
+											about : 'c_friendRequest',
+											result : 1
+										});
+										if(online_user.has(msg.data.target)){
+											//if target is online
+											var target_sock = online_user.get(msg.data.target).socket_id;
+											io.to(target_sock).json.emit('server_friendRequest', {
+												action : 'update',
+												data : {
+													from_id : req_id,
+													from_nick : online_user.get(req_id).user_nick,
+													from_name : online_user.get(req_id).user_name,
+													request_date : cdate
 												}
-												var ret = {
-													action : 'response',
-													value : {
-														call : 'c_connect',
-														result : result2.result
-													}
-												};
-												socket.json.emit('server_connect', ret);
 											});
 										}
-										break;
-										case 1://online
-										{
-											//사전에 접속한 유저의 연결을 차단
-											var ret = {
-												action : 'delete',
-												value : {
-													call : 'new_connect'
-												}
-											};
-											var target_sock = io.sockets.sockets[client_socket_ids.get(id)];
-											if(typeof target_sock != 'undefined'){
-												target_sock.json.emit('server_connect', ret);
-												target_sock.user_id = undefined;
-											}
-
-											client_socket_ids.remove(id);
-											client_socket_ids.set(id, socket.id);//enroll this client at server client table
-											socket.user_id = id;
-											ret = {
-												action : 'response',
-												value : {
-													call : 'c_connect',
-													result : 2
-												}
-											};
-											socket.json.emit('server_connect', ret);
-										}
-										break;
-										case 2://error
-										{
-											var ret = {
-												action : 'response',
-												value : {
-													call : 'c_connect',
-													result : 3
-												}
-											};
-											socket.json.emit('server_connect', ret);
-										}
-										return;
-									}
-
-									member.read_member({
-										id : id
-									}, function(result2){
-										switch(result2.result){
-											case 0://fail log this info
-											return;
-											case 1:
-											break;
-										}
-										socket.user_nick = result2.data.nickname;
-
-										friend_list.read_friendList({
-											id : id
-										}, function(result3){
-											switch(result3.result){
-												case 0://error log this error
-												return;
-												case 1://success
-												break;
-											}
-
-											for(var i in result3.data){
-												(function(i){
-													process.nextTick(function(){
-														if(client_socket_ids.has(result3.data[i].fid)){//if fid socket is connected
-															var ret = {
-																action : 'update',
-																value : {
-																	friend_id : id,
-																	friend_nick : result2.data.nickname,
-																	isOnline : 1
-																}
-															};
-															io.sockets.sockets[client_socket_ids.get(result3.data[i].fid)].json.emit('server_friend', ret);
-														}
-													});
-												})(i);
-											}
-										});
 									});
-								});
-							}
-							break;
-							case 2://error
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'c_connect',
-										result : 3
-									}
-								};
-								socket.json.emit('server_connect', ret);
-							}
-							break;
+								}
+							});
 						}
 					});
 				}
 				break;
+				case 'read':
+				{
+					switch(msg.data.target){
+						case 'all':
+						{
+							friend_request.read_friendRequest({
+								id : req_id
+							}).then(function(result){
+								socket.json.emit('server_friendRequest', {
+									action : 'response',
+									about : 'r_friendRequest_all',
+									result : 1,
+									data : result
+								});
+							}, function(err){
+								console.log(err);
+								socket.json.emit('server_friendRequest', {
+									action : 'response',
+									about : 'r_friendRequest_all',
+									result : 0
+								});
+							});
+						}
+						break;
+					}
+				}
+				break;
 				case 'update':
 				{
+					/*
+					ouput
+					{
+						action : 'response',
+						about : 'u_friendRequest',
+						result : 
+							0 : error
+							1 : success
+							2 : invalid request
+					}
+					*/
+					friend_request.read_checkFriendRequest({
+						id1 : req_id,
+						id2 : msg.data.target
+					}).then(function(result){
+						if(result.length > 0){
+							//async actions
+							Promise.all([
+								friend_request.delete_friendRequest({
+									from_id : msg.data.target,
+									to_id : req_id
+							}), friend_list.create_friend({
+									fid1 : msg.data.target,
+									fid2 : req_id
+							})]).then(function(result1){
+								//async actions
+								if(online_user.has(msg.data.target)){
+									//if target is online
+									member.read_member({
+										id : req_id
+									}).then(function(result2){
+										//because of async action, re-check whether target is online or not
+										if(online_user.has(msg.data.target)){
+											var target_sock = online_user.get(msg.data.target).socket_id;
+											io.to(target_sock).json.emit('server_friend', {
+												action : 'update',
+												data : {
+													friend_id : req_id,
+													friend_nick : result2[0].nickname,
+													friend_name : result2[0].name,
+													isOnline : ((online_user.has(req_id))?1:0)
+												}
+											});
+										}
+									});
+								}
 
+								member.read_member({
+									id : msg.data.target
+								}).then(function(result2){
+									socket.json.emit('server_friendRequest', {
+										action : 'response',
+										about : 'u_friendRequest',
+										result : 1,
+										data : {
+											friend_id : msg.data.target,
+											friend_nick : result2[0].nickname,
+											friend_name : result2[0].name,
+											isOnline : ((online_user.has(msg.data.target))?1:0)
+										}
+									});
+								});
+							}, function(err1){
+								console.log(err1);
+								socket.json.emit('server_friendRequest', {
+									action : 'response',
+									about : 'u_friendRequest',
+									result : 0
+								});
+							});
+						}else{//result.length == 0, means that there is no friend request
+							socket.json.emit('server_friendRequest', {
+								action : 'response',
+								about : 'u_friendRequest',
+								result : 2
+							});
+						}
+					}, function(err){
+						console.log(err);
+						socket.json.emit('server_friendRequest', {
+							action : 'response',
+							about : 'u_friendRequest',
+							result : 0
+						});
+					});
+				}
+				break;
+				case 'delete':
+				{
+					/*
+					output
+					{
+						action : 'response',
+						about : 'd_friendRequest',
+						result : 
+							0 : error
+							1 : success
+							2 : invalid request
+					}
+					*/
+					friend_request.read_checkFriendRequest({
+						id1 : req_id,
+						id2 : msg.data.target
+					}).then(function(result){
+						if(result.length > 0){
+							friend_request.delete_friendRequest({
+								from_id : msg.data.target,
+								to_id : req_id
+							});
+							socket.json.emit('server_friendRequest', {
+								action : 'response',
+								about : 'd_friendRequest',
+								result : 1,
+								data : {
+									friend_id : msg.data.target
+								}
+							});
+						}else{
+							socket.json.emit('server_friendRequest', {
+								action : 'response',
+								about : 'd_friendRequest',
+								result : 2
+							});
+							return;
+						}
+					}, function(err){
+						socket.json.emit('server_friendRequest', {
+							action : 'response',
+							about : 'd_friendRequest',
+							result : 0
+						});
+					});	
+				}
+				break;
+			}
+		});
+		
+		socket.on('client_room', function(msg){
+			if(!socket_ids.has(socket.id))
+				return;
+
+			var req_id = socket_ids.get(socket.id);
+
+			switch(msg.action){
+				case 'create':
+				{}
+				break;
+				case 'read':
+				{
+					switch(msg.data.target){
+						case 'all':
+						{
+
+						}
+						break;
+						case 'single':
+						{
+
+						}
+						break;
+					}
 				}
 				break;
 			}
 		});
 
 		socket.on('client_member', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
+			if(!socket_ids.has(socket.id))
 				return;
-			}
+
+			var req_id = socket_ids.get(socket.id);
 
 			switch(msg.action){
-				case 'create':
-				{
-
-				}
-				break;
-				case 'read':
-				{
-					/*
-					output
-						{
-							action : 'response',
-							value : {
-								call : 'r_member',
-								target_id : r'1,
-								result : 
-									0 : fail
-									1 : success,
-								data : {
-									id : r1,
-									nickname : r2,
-									name : r3,
-									cdate : r4
-								}
-							}
-						}
-					*/
-					mem_meta.read_detailMemberMeta({
-						id : socket.user_id
-					}, function(result){
-						result.call = 'r_member';
-						result.target_id = socket.user_id
-						var ret = {
-							action : 'response',
-							value : result
-						};
-						socket.json.emit('server_member', ret);
-					});
-				}
-				break;
 				case 'update':
 				{
 					/*
-					input
-						{
-							action : 'update',
-							value : {
-								nickname : d1,
-								name : d2
-							}
-						}
 					output
-						{
-							action : 'response',
-							value : {
-								call : 'u_member',
-								result : r1,
-								target_id : r'1
-							}
-						}
-					*/
-					var nick = msg.value.nickname.trim();
-					var name = msg.value.name.trim();
-					member.update_member({
-						id : socket.user_id,
-						nickname : nick,
-						name : name
-					}, function(result){
-						var ret = {
-							action : 'response',
-							value : {
-								call : 'u_member',
-								result : result.result,
-								target_id : socket.user_id
-							}
-						};
-						socket.json.emit('server_member', ret);
-					});
-				}
-				break;
-				case 'delete':
-				{
-
-				}
-				break;
-			}
-		});
-
-		socket.on('client_friend', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			switch(msg.action){
-				case 'create':
-				{
-
-				}
-				break;
-				case 'read':
-				{
-					/*
-					output
-						{
-							action:'response',
-							value : {
-								call : 'r_friend',
-								result : 
-									0 : fail
-									1 : success
-								data : [
-									{friend_id : r1, isOnline : r'1}
-									...
-								]	
-							}
-						}
-					*/
-					friend_list.read_friendListWithStatus({
-						id : socket.user_id
-					}, function(result){
-						switch(result.result){
-							case 0://fail
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'r_friend',
-										result : result.result
-									}
-								};
-								socket.json.emit('server_friend', ret);
-							}
-							break;
-							case 1://success
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'r_friend',
-										result : result.result,
-										data : result.data
-									}
-								};
-								socket.json.emit('server_friend', ret);
-							}
-							break;
-						}
-					});
-				}
-				break;
-				case 'update':
-				{
-
-				}
-				break;
-				case 'delete':
-				{
-					/*
-					input
-						{
-							action : 'delete',
-							value : {
-								friend_id : d1
-							}
-						}
-					output
-						{
-							action : 'response',
-							value : {
-								call : 'd_friend',
-								result : 
-									0 : fail
-									1 : success
-								friend_id : r1
-							}
-						}
-					*/
-					var target_id = msg.value.friend_id.trim().toLowerCase();
-
-					if(target_id == socket.user_id){
-						var ret = {
-							action : 'response',
-							value : {
-								call : 'd_friend',
-								friend_id : target_id,
-								result : 0
-							}
-						};
-						socket.json.emit('server_friend', ret);
-						return;
+					{
+						action : 'response',
+						about : 'u_member',
+						result : 
+							0 : error
+							1 : success
 					}
-
-					friend_list.delete_friend({
-						id1 : socket.user_id,
-						id2 : target_id
-					}, function(result){
-						if(client_socket_ids.has(target_id)){
-							var ret = {
-								action : 'delete',
-								value : {
-									friend_id : socket.user_id
-								}
-							};
-							io.sockets.sockets[client_socket_ids.get(target_id)].json.emit('server_friend', ret);
-						}
-						var ret = {
-							action : 'response',
-							value : {
-								call : 'd_friend',
-								result : result.result,
-								friend_id : target_id
-							}
-						};
-						socket.json.emit('server_friend', ret);
-					});
-				}
-				break;
-			}
-		});
-
-		socket.on('client_friendRequest', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			switch(msg.action){
-				case 'create':
-				{
-					/*
-					output
-						{
-							action : 'response',
-							value : {
-								call : 'c_friendRequest',
-								friend_id : d1
-								result : 
-									0 : there is already friend request or already friend
-									1 : success
-									2 : error
-							}	
-						}
 					*/
-					var target_id = msg.value.friend_id.trim().toLowerCase();
-
-					if(socket.user_id == target_id){
-						var ret = {
+					member.update_member({
+						id : req_id,
+						name : msg.data.name,
+						nickname : msg.data.nickname
+					}).then(function(result){
+						socket.json.emit('server_member', {
 							action : 'response',
-							value : {
-								call : 'c_friendRequest',
-								friend_id : target_id,
-								result : 0
-							}
-						};
-						socket.json.emit('server_friendRequest', ret);
-						return;
-					}else{
-						friend_list.read_hasFriendRequest({
-							id1 : target_id,
-							id2 : socket.user_id
-						}, function(result1){
-							switch(result1.result){
-								case 0://not friend and friend request
-								{
-									friend_list.create_friendRequest({
-										from_id : socket.user_id,
-										to_id : target_id
-									}, function(result){
-										var ret = {
-											action : 'response',
-											value : {
-												call : 'c_friendRequest',
-												friend_id : target_id,
-												result : result.result
-											}
-										};
-										socket.json.emit('server_friendRequest', ret);
-										if(client_socket_ids.has(target_id)){
-											var ret = {
-												action : 'create',
-												value : {
-													friend_id : socket.user_id,
-													friend_nick : socket.user_nick
-												}
-											};
-											io.sockets.sockets[client_socket_ids.get(target_id)].json.emit('server_friendRequest', ret);
-										}
-									});
-								}
-								break;
-								case 1://friend or friend request
-								{
-									var ret = {
-										action : 'response',
-										value : {
-											call : 'c_friendRequest',
-											friend_id : target_id,
-											result : 0
-										}
-									};
-									socket.json.emit('server_friendRequest', ret);
-								}
-								break;
-								case 2://error, log this error
-								{
-									var ret = {
-										action : 'response',
-										value : {
-											call : 'c_friendRequest',
-											friend_id : target_id,
-											result : 2
-										}
-									};
-									socket.json.emit('server_friendRequest', ret);
-								}
-								break;
+							about : 'u_member',
+							result : 1,
+							data : {
+								e_nick : msg.data.name,
+								e_name : msg.data.nickname
 							}
 						});
+
+						//send edited data to user's friends
+						friend_list.read_friends({
+							id : req_id
+						}).then(function(result1){
+							for(var i in result1){
+								(function(i){
+									process.nextTick(function(){
+										if(online_user.has(result1[i].friend_id)){
+											var target_sock = online_user.get(result1[i].friend_id).socket_id;
+											io.to(target_sock).json.emit('server_friend', {
+												action : 'update',
+												data : {
+													friend_id : req_id,
+													friend_nick : msg.data.nickname,
+													friend_name : msg.data.name,
+													isOnline : (online_user.has(req_id))?1:0
+												}
+											});
+											console.log('send to ' + result1[i].friend_id + '\ntarget_sock : ' + target_sock);
+										}
+									});
+								})(i);
+							}
+						}, function(err){
+							//log this error
+						});
+					}, function(err){
+						console.log(err);
+						socket.json.emit('server_member', {
+							action : 'response',
+							about : 'u_member',
+							result : 0
+						});
+					});
+				}
+				case 'read':
+				{
+					var data = msg.data;
+					switch(data.condition){
+						case 'id':
+						{
+							member.read_member({
+								id : data.value
+							}).then(function(result){
+								Promise.all(result.map(function(data){
+									return friend_list.read_isFriend({
+										id1 : req_id,
+										id2 : data.id
+									}).then(function(res){
+										if(res.length > 0)
+											data.isFriend = 1;
+										else
+											data.isFriend = 0;
+										return data;
+									});
+								})).then(function(result1){
+									socket.json.emit('server_member', {
+										action : 'response',
+										about : 'r_member',
+										data : result1
+									});
+								}, function(err){
+									console.log(err);
+								});
+							},function(err){
+								console.log(err);
+							});
+						}
+						break;
+						case 'name':
+						{
+							var promise = member.read_byName({
+								name : data.value
+							});
+
+							promise.then(function(result){
+								Promise.all(result.map(function(data){
+									return friend_list.read_isFriend({
+										id1 : req_id,
+										id2 : data.id
+									}).then(function(res){
+										if(res.length > 0)
+											data.isFriend = 1;
+										else
+											data.isFriend = 0;
+										return data;
+									});
+								})).then(function(result1){
+									socket.json.emit('server_member', {
+										action : 'response',
+										about : 'r_member',
+										data : result1
+									});
+								}, function(err){
+									console.log(err);
+								});
+							},function(err){
+								console.log(err);
+							});
+						}
+						break;
+						case 'nick':
+						{
+							var promise = member.read_byNick({
+								nickname : data.value
+							});
+
+							promise.then(function(result){
+								Promise.all(result.map(function(data){
+									return friend_list.read_isFriend({
+										id1 : req_id,
+										id2 : data.id
+									}).then(function(res){
+										if(res.length > 0)
+											data.isFriend = 1;
+										else
+											data.isFriend = 0;
+										return data;
+									});
+								})).then(function(result1){
+									socket.json.emit('server_member', {
+										action : 'response',
+										about : 'r_member',
+										data : result1
+									});
+								}, function(err){
+									console.log(err);
+								});
+							},function(err){
+								console.log(err);
+							});
+						}
+						break;
 					}
 				}
 				break;
-
-				case 'read':
+			}
+		});
+		socket.on('client_connect', function(msg){
+			switch(msg.action){
+				case 'create':
 				{
-					friend_list.read_friendRequests({
-						id : socket.user_id
-					}, function(result){
-						var ret = {
+					/*
+					output
+						{
 							action : 'response',
-							value : {
-								call : 'r_friendRequest',
-								result : result.result,
-								data : result.data
-							}
-						};
-						socket.json.emit('server_friendRequest', ret);
+							about : 'c_connect',
+							result : 
+								0 : error
+								1 : not online user, allowed
+								2 : already online user, allowed
+								3 : not member
+						}
+					*/
+					var id = msg.data.id;
+					var password = msg.data.password;
+					if(id == undefined || password == undefined)
+						return;
+
+					var err_ret = {
+						action : 'response',
+						about : 'c_connect',
+						result : 0
+					};
+					var val_notOn_ret = {
+						action : 'response',
+						about : 'c_connect',
+						result : 1
+					};
+					var val_On_ret = {
+						action : 'response',
+						about : 'c_connect',
+						result : 2
+					};
+					var inval_ret = {
+						action : 'response',
+						about : 'c_connect',
+						result : 3
+					};
+
+
+					var promise = member.read_extMember({
+						id : id,
+						password : password
 					});
-				}
-				break;
-				case 'update':
-				{//accept friend request
-					friend_list.update_friendRequest({
-						from_id : msg.value.friend_id,
-						to_id : socket.user_id
-					}, function(result){
-						switch(result.result){
-							case 0://fail
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'u_friendRequest',
-										result : result.result
+
+					promise.then(function(result){
+						//on success
+						if(result.length != 1){
+							//not member
+							socket.json.emit('server_connect', inval_ret);
+						}else{
+							if(online_user.has(id)){
+								//already online user
+								var already_user_info = online_user.get(id);
+								var ret1 = {
+									action : 'delete',
+									data : {
+										code : 'new_connect'
 									}
 								};
-								socket.json.emit('server_friendRequest', ret);
-							}
-							break;
-							case 1://success
-							{
-								member.read_member({
-									id : msg.value.friend_id
-								}, function(result1){
-									switch(result1.result){
-										case 0://error
-										break;
-										case 1://success
-										var isOn = client_socket_ids.has(msg.value.friend_id)?1:0;
-										var ret = {
-											action : 'response',
-											value : {
-												call : 'u_friendRequest',
-												result : result.result,
-												friend_id : msg.value.friend_id,
-												friend_nick : result1.data.nickname,
-												isOnline : isOn
-											}
-										};
-										socket.json.emit('server_friendRequest', ret);
-										break;
-									}
+								io.to(already_user_info.socket_id).json.emit('server_connect', ret1);
+								io.to(already_user_info.socket_id).emit('disconnect');
+								socket_ids.remove(already_user_info.socket_id);
+								online_user.remove(id);
+								socket_ids.set(socket.id, id);
+								online_user.set(id, {
+									user_nick : already_user_info.user_nick,
+									user_name : already_user_info.user_name,
+									socket_id : socket.id
 								});
-								
-								if(client_socket_ids.has(msg.value.friend_id)){
-									var target_sock = io.sockets.sockets[client_socket_ids.get(msg.value.friend_id)];
+
+								val_On_ret.data = {
+									user_id : id,
+									user_nick : result[0].nickname,
+									user_name : result[0].name,
+									user_cdate : result[0].cdate
+								};
+
+								socket.json.emit('server_connect', val_On_ret);
+							}else{
+								//not online user, valid
+								online_user.set(id, {
+									user_nick : result[0].nickname,
+									user_name : result[0].name,
+									socket_id : socket.id
+								});
+
+								val_notOn_ret.data = {
+									user_id : id,
+									user_nick : result[0].nickname,
+									user_name : result[0].name,
+									user_cdate : result[0].cdate
+								};
+
+								socket_ids.set(socket.id, id);
+								socket.json.emit('server_connect', val_notOn_ret);
+
+								var promise2 = friend_list.read_friends({
+									id : id
+								});
+
+								promise2.then(function(result2){
+									//success on read friends
 									var ret = {
 										action : 'update',
-										value : {
-											friend_id : socket.user_id,
-											friend_nick : socket.user_nick,
+										data : {
+											friend_id : id,
+											friend_nick : result[0].nickname,
+											friend_name : result[0].name,
 											isOnline : 1
 										}
 									};
-									target_sock.json.emit('server_friendRequest', ret);
-								}
-							}
-							break;
-						}
-					});
-				}
-				break;
-				case 'delete':
-				{//reject friend request
-					friend_list.delete_friendRequest({
-						from_id : msg.value.friend_id,
-						to_id : socket.user_id
-					}, function(result){
-						var ret = {
-							action : 'response',
-							value : {
-								call : 'd_friendRequest',
-								result : result.result,
-								friend_id : msg.value.friend_id
-							}
-						};
-						socket.json.emit('server_friendRequest', ret);
-					});
-				}
-				break;
-			}
-		});
 
-		socket.on('client_room', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			switch(msg.action){
-				case 'create':
-				{
-					var room_id = crypto.createHash('sha256').update(new Date().format('yyyy-MM-dd HH:mm:ss') + socket.user_id).digest('hex');
-					var room_title = msg.value.room_title;
-					chat_room.create_NewRoom({
-						room_id : room_id,
-						room_title : room_title
-					}, function(result){
-						switch(result.result){
-							case 0://fail
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'c_room',
-										result : 0,
-										room_title : room_title
-									}
-								};
-								socket.json.emit('server_room', ret);
-							}
-							break;
-							case 1://success
-							{
-								room_joined.create_roomJoined({
-									room_id : room_id,
-									id : socket.user_id,
-								}, function(result1){
-									switch(result1.result){
-										case 0://fail
-										{
-											var ret = {
-												action : 'response',
-												value : {
-													call : 'c_room',
-													result : 0,
-													room_title : room_title
-												}
-											};
-											socket.json.emit('server_room', ret);
-
-											chat_room.delete_Room({
-												room_id : room_id
-											}, function(result2){
-												switch(result2.result){
-													case 0://fail, log this error info
-													{}
-													break;
-													case 1://success, do nothing
-													{}
-													break;
+									for(var i in result2){
+										(function(i){
+											process.nextTick(function(){
+												if(online_user.has(result2[i].friend_id)){
+													var target_sock_id = online_user.get(result2[i].friend_id).socket_id;
+													io.to(target_sock_id).json.emit('server_friend', ret);
 												}
 											});
-										}
-										break;
-										case 1://success
-										{
-											var ret = {
-												action : 'response',
-												value : {
-													call : 'c_room',
-													result : 1,
-													room_id : room_id,
-													room_title : room_title,
-													members : [
-														{member_id : socket.user_id, member_nick : socket.user_nick}
-													]
-												}
-											};
-											socket.json.emit('server_room', ret);
-										}
-										break;
+										})(i);
 									}
+								}, function(err1){
+									console.err(err);
 								});
 							}
-							break;
 						}
+					}, function(err){
+						//on error
+						console.log(err);
+						socket.json.emit('server_connect', err_ret);
 					});
 				}
 				break;
-				case 'read':
-				{
-					room_joined.read_userJoinedRooms({
-						id : socket.user_id
-					}, function(result){
-						switch(result.result){
-							case 0://fail
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'r_room',
-										result : 0
-									}
-								};
-								socket.json.emit(ret);
-							}
-							break;
-							case 1://success
-							{
-								var isAllDone = 0;
-								result.data.forEach(function(element){
-									room_joined.read_joinedMember({
-										room_id : element.room_id
-									}, function(result1){
-										isAllDone++;
-										switch(result1.result){
-											case 0://fail
-											{}
-											break;
-											case 1://success
-											{
-												element.members = result1.data;
-											}
-											break;
-										}
-
-										if(isAllDone == result.data.length){
-												var ret = {
-												action : 'response',
-												value : {
-													call : 'r_room', 
-													result : 1,
-													data : result.data
-												}
-											};
-											socket.json.emit('server_room', ret);
-										}	
-									});
-								});
-
-							}
-							break;
-						}
-
-					});
-				}
-				break;
-				case 'update':
-				{
-
-				}
-				break;
-				case 'delete':
-				{
-					
-				}
-				break;
 			}
-		});
-
-		socket.on('client_roomInvite', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			switch(msg.action){
-				case 'create':
-				{//create room invitation
-					/*
-					output
-						{
-							action : 'response',
-							value : {
-								call : 'c_roomInvite',
-								result : 
-									0 : fail
-									1 : success
-							}
-						}
-					*/
-					var target_id = msg.value.target_id.trim().toLowerCase();
-					//check whether user request is valid or not
-					room_joined.read_userJoined({
-						user_id : socket.user_id,
-						room_id : msg.value.room_id
-					}, function(result){
-						switch(result.result){
-							case 0://not joined
-							{
-								var ret = {
-									action : 'response',
-									value : {
-										call : 'c_roomInvite',
-										result : 0,
-										target_id : target_id
-									}
-								};
-								socket.json.emit('server_roomInvite', ret);
-							}
-							break;
-							case 1://joined => valid request
-							{
-								room_joined.create_roomInvitation({
-									room_id : msg.value.room_id,
-									user_id : target_id
-								}, function(result1){
-									var ret = {
-										action : 'response',
-										value : {
-											call : 'c_roomInvite',
-											result : result1.result,
-											target_id : target_id
-										}
-									};
-									socket.json.emit('server_roomInvite', ret);
-									
-									if(client_socket_ids.has(target_id)){
-										chat_room.read_room({
-											room_id : msg.value.room_id
-										}, function(result2){
-											switch(result2.result){
-												case 0://fail, log this error
-												{
-												}
-												break;
-												case 1://success
-												{
-													if(client_socket_ids.has(target_id)){
-														var target_sock = io.sockets.sockets[client_socket_ids.get(target_id)];
-														if(typeof target_sock != 'undefined'){
-															var ret1 = {
-																action : 'create',
-																value : {
-																	room_id : msg.value.room_id,
-																	room_title : result2.data.room_title,
-																	from_nick : socket.user_nick
-																}
-															};
-															target_sock.json.emit('server_roomInvite', ret1);
-														}
-													}
-												}
-												break;
-											}
-										});
-									}
-								});
-							}
-							break;
-						}
-					});
-					console.log(JSON.stringify(msg));
-				}
-				break;
-				case 'read':
-				{
-					room_joined.read_userUnjoinedRooms({
-						id : socket.user_id
-					}, function(result){
-						var ret;
-						switch(result.result){
-							case 0://fail
-							{
-								ret = {
-									action : 'response',
-									value : {
-										call : 'r_roomInvite',
-										result : 0
-									}
-								};
-							}
-							break;
-							case 1://success
-							{
-								ret = {
-									action : 'response',
-									value : {
-										call : 'r_roomInvite',
-										result : 1,
-										data : result.data
-									}
-								};
-							}
-							break;
-						}
-						socket.json.emit('server_roomInvite', ret);
-					});
-				}
-				break;
-				case 'update':
-				{
-
-				}
-				break;
-				case 'delete':
-				{
-					
-				}
-				break;
-			}
-		});
-
-		socket.on('client_chat', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			switch(msg.action){
-				case 'create':
-				{
-
-				}
-				break;
-				case 'read':
-				{
-
-				}
-				break;
-				case 'update':
-				{
-
-				}
-				break;
-				case 'delete':
-				{
-					
-				}
-				break;
-			}
-		});
-
-		socket.on('disconnect', function(msg){
-			if(!client_socket_ids.has(socket.user_id)){
-				onInvalidConnect(socket);
-				socket.disconnect(true);
-				return;
-			}
-
-			var target_id = socket.user_id;
-			if(target_id == undefined)
-				return;
-
-			console.log('disconnect id : ' + target_id);
-
-			friend_list.read_friendList({
-				id : target_id
-			}, function(result1){
-				switch(result1.result){
-					case 0://fail, log this info
-					console.log('read friendList error');
-					return;
-					case 1://success
-					break;
-				}
-				for(var i in result1.data){
-					(function(i){
-						process.nextTick(function(){
-							if(client_socket_ids.has(result1.data[i].fid)){//if fid socket is connected
-								var ret = {
-									action : 'update',
-									value : {
-										friend_id : target_id,
-										friend_nick : socket.user_nick,
-										isOnline : 0
-									}
-								};
-								io.sockets.sockets[client_socket_ids.get(result1.data[i].fid)].json.emit('server_friend', ret);
-							}
-						});
-					})(i);
-				}
-			});
-			mem_meta.update_memberMetaOnLogout({
-				id : socket.user_id
-			}, function(result){
-				switch(result){
-					case 0://fail, log this info
-						console.log('fail disconnect id : ' + socket.user_id);
-					break;
-					case 1://success
-					break;
-				}
-			});
-
-			client_socket_ids.remove(socket.user_id);
-			socket.user_id = undefined;
 		});
 	});
 }

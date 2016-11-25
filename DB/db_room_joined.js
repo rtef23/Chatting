@@ -1,11 +1,11 @@
 var db = require('./db');
 
-exports.create_roomJoined = function(form, callback){
+exports.create_roomJoin = function(form, callback){
 	/*
 	input
 		{
 			room_id : d1,
-			id : d2,
+			user_id : d2,
 		}
 	output
 		{
@@ -23,6 +23,21 @@ exports.create_roomJoined = function(form, callback){
 		return result;
 	}
 	
+	conn.query('insert into room_joined set ?', {
+		room_id : form.room_id,
+		user_id : form.user_id
+	}, function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {result : 1};
+		callback(result);
+		return result;
+	});
 }
 
 exports.read_userJoinedRooms = function(form, callback){
@@ -53,6 +68,23 @@ exports.read_userJoinedRooms = function(form, callback){
 		return result;
 	}
 
+	conn.query('select room_id, room_title from room_joined natural join chat_room where user_id=? order by room_title', [form.id], function(err, rows){
+		if(err){
+			conn.end();
+			result = {
+				result : 0
+			};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {
+			result : 1,
+			data : rows
+		};
+		callback(result);
+		return result;
+	});
 }
 
 
@@ -83,7 +115,23 @@ exports.read_joinedMember = function(form, callback){
 		return result;
 	}
 
-	
+	conn.query('select m.id as member_id, m.nickname as member_nick from (select user_id as id from room_joined where room_id=?) rj natural join member m', [
+		form.room_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {
+			result : 1,
+			data : rows
+		};
+		callback(result);
+		return result;
+	});
 }
 
 exports.read_userJoined = function(form, callback){
@@ -109,19 +157,38 @@ exports.read_userJoined = function(form, callback){
 		return result;
 	}
 
+	conn.query('select room_id from room_joined where user_id=? and room_id=?', [
+		form.user_id,
+		form.room_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		if(rows.length > 0){
+			result = {result : 1};
+		}else{
+			result = {result : 0};
+		}
+		callback(result);
+		return result;
+	});
 }
 
-exports.create_roomInvitation = function(form, callback){
+exports.delete_leaveJoinedRoom = function(form, callback){
 	/*
 	input
 		{
-			room_id : d1
+			room_id : d1,
 			user_id : d2
 		}
 	output
 		{
 			result :
-				0 : fail
+				0 : fail,
 				1 : success
 		}
 	*/
@@ -134,4 +201,18 @@ exports.create_roomInvitation = function(form, callback){
 		return result;
 	}
 
+	conn.query('delete from room_joined where room_id=? and user_id=?', [
+		form.room_id, form.user_id
+	], function(err, rows){
+		if(err){
+			conn.end();
+			result = {result : 0};
+			callback(result);
+			return result;
+		}
+		conn.end();
+		result = {result : 1};
+		callback(result);
+		return result;
+	});
 }

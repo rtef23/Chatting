@@ -1,9 +1,9 @@
-module.exports = function(app){
+module.exports = function(app, online_users){
 	var fs = require("fs");
 	var member = require("../DB/db_member");
 	var member_meta = require("../DB/db_member_meta");
+	var friend_list = require('../DB/db_friend_list');
 	var url = require('url');
-
 	var crypto = require('crypto');
 	require('../Util/date');
 	var server = require('../server');
@@ -32,122 +32,100 @@ module.exports = function(app){
 				output
 					{
 						action : 'response',
+						about : 'c_member',
 						value : {
-							call : 'c_member',
 							id : d1,
 							result : 
-								'success'
-								'fail'
-								'error'
+								0 : fail, already ext member id
+								1 : success
+								2 : error
 						}
 					}
 				*/
 				var id = req.body.value.id.trim().toLowerCase();
 				var password = req.body.value.password.trim().toLowerCase();
+				var name = req.body.value.name;
+				var nick = req.body.value.nickname;
 
-				member.is_ext_id({
-					id : id,
-					password : password
-				}, function(result){
-					switch(result.result){
-						case 0://not ext id
-						break;
-						case 1://ext id
-						{
-							var ret = {
-								action : 'response',
-								value : {
-									call : 'c_member',
-									id : id,
-									result : 'fail'
-								}
-							};
-							res.json(ret);
-						}
-						return;
-						case 2://error
-						{
-							var ret = {
-								action : 'response',
-								value : {
-									call : 'c_member',
-									id : id,
-									result : 'error'
-								}
-							};
-							res.json(ret);
-						}
-						return;
-					}
-					member.create_member({
-						id : id,
-						password : password,
-						nickname : req.body.value.nickname,
-						name : req.body.value.name
-					}, function(result1){
-						switch(result1.result){
-							case 0://error
-							{
+				var promise = member.read_isExtID({
+					id : id
+				});
+				promise.then(function(result){
+					//on read success
+					if(result.length >= 1){
+						//already ext id
+						var ret = {
+							action : 'response',
+							about : 'c_member',
+							value : {
+								id : id,
+								result : 0
+							}
+						};
+						res.json(ret);
+					}else{
+						//not ext id
+						var promise1 = member.create_member({
+							id : id,
+							password : password,
+							nickname : nick,
+							name : name
+						});
+
+						promise1.then(function(result1){
+							//on create success
+							var promise2 = member_meta.create_member_meta({
+								id : id
+							});
+
+							promise2.then(function(result){
+								//on success create meta info
 								var ret = {
 									action : 'response',
+									about : 'c_member',
 									value : {
-										call : 'c_member',
 										id : id,
-										result : 'error'
+										result : 1
 									}
 								};
 								res.json(ret);
-							}
-							return;
-							case 1://success
-							{
-								member_meta.create_member_meta({
-									id : id
-								}, function(result2){
-									switch(result2.result){
-										case 0://error
-										{
-											member.delete_member({
-												id : id,
-												password : password
-											}, function(result3){
-												switch(result3.result){
-													case 0://fail, log this error
-													case 1://success
-													break;
-												}
-											});
-											var ret = {
-												action : 'response',
-												value : {
-													call : 'c_member',
-													id : id,
-													result : 'error'
-												}
-											};
-											res.json(ret);
-										}
-										return;
-										case 1://success
-										{
-											var ret = {
-												action : 'response',
-												value : {
-													call : 'c_member',
-													id : id,
-													result : 'success'
-												}
-											};
-											res.json(ret);
-										}
-										break;
+							}, function(err){
+								//on error create meta info
+								//log this error
+								var ret = {
+									action : 'response',
+									about : 'c_member',
+									value : {
+										id : id,
+										result : 1
 									}
-								});
-							}
-							break;
+								};
+								res.json(ret);
+							});
+						}, function(err){
+							//on create fail
+							var ret = {
+								action : 'response',
+								about : 'c_member',
+								value : {
+									id : id,
+									result : 2
+								}
+							};
+							res.json(ret);
+						});
+					}
+				}, function(err){
+					//on read fail
+					var ret = {
+						action : 'response',
+						about : 'c_member',
+						value : {
+							id : id,
+							result : 2
 						}
-
-					});
+					};
+					res.json(ret);
 				});
 			}
 			break;
@@ -166,26 +144,31 @@ module.exports = function(app){
 		}
 	});
 
-	//return chatting server url with port number
-	app.post('/chatting_server_address', function(req, res){
+	app.post('/client_friend', function(req, res){
 		/*
+		input
+			{
+				request_id : d1,
+				friend_id : d2
+			}
 		output
 			{
-				result : 
-					0 : fail in connecting to chatting server
-					1 : success in connecting to chatting server
-				,chat_url : 
-					data1
+				result :
+					0 : error or is not friend
+					1 : friend
+				value : {
+					friend_id : r1,
+					friend_nick : r2,
+					friend_name : r3
+				}
+
 			}
 		*/
-		var tmp_url = url.protocol + "//" + url.host;
-		var chat_addr = server.getChatProtocol() + '://' + server.getChatServerIPAddr() + ':' + server.getChatServerPort();
-		var result;
-
-		result = {
-			result : 1,
-			chat_url : chat_addr
-		};
-		res.json(result);
+		switch(req.body.action){
+			case 'read' : 
+			{
+			}
+			break;
+		}
 	});
 }

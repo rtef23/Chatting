@@ -1,0 +1,170 @@
+<div id='friend-search-panel-form' style='display:none;'>
+	<div id='friend-search-panel' class='panel panel-default' style='width:45%;height:100%;float:left;margin-left:3%;'>
+		<div class='panel-heading' style='height:15%;background-color:#0066ff;'>
+			<h3 style='color:white;'>
+				Friend Search
+			</h3>
+		</div>
+		<div class='panel-body' style='height:70%;'>
+			<form class='form-inline'>
+				<div class="form-group">
+				  <label for="search-condition">Search Condition : </label>
+				  <select class="form-control" id="search-condition">
+				    <option>search by ID</option>
+				    <option>search by Name</option>
+				    <option>search by Nick Name</option>
+				  </select>
+				</div>
+				<input type='text' class='form-control' id='search-info' placeholder='enter data here'>
+				</input>
+				<button type='button' class='btn btn-default' onclick='javascript:onSearchClick();'>
+					Search
+				</button>
+			</form>
+			<div id='friend-search-list' class='list-group' style='width:100%;height:70%;overflow-y:scroll;'>
+			</div>
+		</div>
+		<div class='panel-footer' style='height:15%;background-color:#0066ff;'>
+		</div>
+	</div>
+</div>
+
+<div id='friend-search-item-form-notfriend' style='display:none;'>
+	<a class='list-group-item' id='%friend_id%' style='background-color:white;'>
+		<div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					ID
+				</span>
+				&nbsp;%friend_id%
+			</div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					Name
+				</span>
+				&nbsp;%friend_name%
+			</div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					NickName
+				</span>
+				&nbsp;%friend_nick%
+			</div>
+			<hr>
+			<div>
+				<button class='btn btn-primary btn-sm' onclick='javascript:onRequestClick("%friend_id%")'>Request Friend</button>
+			</div>
+		</div>
+	</a>
+</div>
+<div id='friend-search-item-form-friend' style='display:none;'>
+	<a class='list-group-item' id='%friend_id%' style='background-color:white;'>
+		<div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					ID
+				</span>
+				&nbsp;%friend_id%
+			</div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					Name
+				</span>
+				&nbsp;%friend_name%
+			</div>
+			<div style='text-align:left;'>
+				<span class='label label-info'>
+					NickName
+				</span>
+				&nbsp;%friend_nick%
+			</div>
+			<hr>
+			<div>
+				<button class='btn btn-danger btn-sm' disabled>Already Friend</button>
+			</div>
+		</div>
+	</a>
+</div>
+<script>
+var getFriendSearchPanelForm = function(){
+	return $('div[id=friend-search-panel-form]').html();
+};
+var renderFriendSearch = function(data){
+	/*
+	data
+		[{id : d1, name : d2, nickname : d3, isFriend : d4}, ...]
+	*/
+	$('body[id=main_body] div[id=main_panel_group] div[id=friend-search-panel] div.panel-body div[id=friend-search-list]').empty();
+	for(var prop in data){
+		addFriendSearch(data[prop]);
+	}
+};
+var addFriendSearch = function(data){
+	/*
+	data{
+		id : d1,
+		name : d2,
+		nickname : d3,
+		isFriend : d4
+	}
+	*/
+	var form;
+	if(data.isFriend == 0)
+		form = $('div[id=friend-search-item-form-notfriend]').html();
+	else//isFriend == 1
+		form = $('div[id=friend-search-item-form-friend]').html();
+	form = form.replace(/%friend_id%/g, data.id);
+	form = form.replace(/%friend_name%/g, data.name);
+	form = form.replace(/%friend_nick%/g, data.nickname);
+
+	$('body[id=main_body] div[id=main_panel_group] div[id=friend-search-panel] div.panel-body div[id=friend-search-list]').append(form);
+};
+var onSearchClick = function(){
+	var search_condition = $('body[id=main_body] div[id=main_panel_group] div[id=friend-search-panel] div.panel-body select[id=search-condition]').val();
+	var search_val = $('body[id=main_body] div[id=main_panel_group] div[id=friend-search-panel] div.panel-body input[id=search-info]').val();
+
+	switch(search_condition){
+		case 'search by ID':
+		{
+			socket.json.emit('client_member', {
+				action : 'read',
+				data : {
+					condition : 'id',
+					value : search_val
+				}
+			});
+		}
+		break;
+		case 'search by Name':
+		{
+			socket.json.emit('client_member', {
+				action : 'read',
+				data : {
+					condition : 'name',
+					value : search_val
+				}
+			});
+		}
+		break;
+		case 'search by Nick Name':
+		{
+			socket.json.emit('client_member', {
+				action : 'read',
+				data : {
+					condition : 'nick',
+					value : search_val
+				}
+			});
+		}
+		break;
+	}
+};
+var onRequestClick = function(friend_id){
+	socket.json.emit('client_friendRequest', {
+		action : 'create',
+		data : {
+			target : friend_id
+		}
+	});
+};
+</script>

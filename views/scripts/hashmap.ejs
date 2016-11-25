@@ -1,0 +1,63 @@
+<script text='text/javascript'>
+    Map = function(){
+        this.map = new Object();
+        size = 0;
+    };   
+    Map.prototype = {
+        put : function(key, value){   
+            this.map[key] = value;
+            if(!this.containsKey(key))
+                size++;
+        },   
+        get : function(key){   
+            return this.map[key];
+        },
+        containsKey : function(key){    
+            return key in this.map;
+        },
+        forAll : function(callback){
+            for(var prop in this.map){
+                callback(this.map[prop]);
+            }
+        },
+        containsValue : function(value){    
+            for(var prop in this.map){
+                if(this.map[prop] == value)
+                    return true;
+            }
+            return false;
+        },
+        isEmpty : function(key){    
+            return (this.size() == 0);
+        },
+        clear : function(){   
+            for(var prop in this.map){
+                delete this.map[prop];
+            }
+        },
+        remove : function(key){
+            if(!this.containsKey(key))
+                return false;
+            size--;
+            delete this.map[key];
+            return true;
+        },
+        keys : function(){   
+            var keys = new Array();   
+            for(var prop in this.map){   
+                keys.push(prop);
+            }   
+            return keys;
+        },
+        values : function(){   
+            var values = new Array();   
+            for(var prop in this.map){   
+                values.push(this.map[prop]);
+            }   
+            return values;
+        },
+        size : function(){
+            return size;
+        }
+    };
+</script>

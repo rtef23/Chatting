@@ -1,128 +1,54 @@
 <html>
-	<% include ../Headers/header_main %>
-	<script text='text/javascript'>
-		var current_document = '';
-		var room_count = 0;
-		var room_invite_count = 0;
-		var friend_request_count = 0;
-	</script>
 	<head>
+		<% include ../Headers/header_main %>
+		<% include ../scripts/utils %>
+		<script text='text/javascript'>
+			var socket;
+			var user = new Map();
+			/*
+			K : V
+			"user_id" : d1,
+			"user_nick" : d2,
+			"user_name" : d3,
+			"friends" : Map()
+				K : V
+				fid : {friend_id : d4, friend_nick : d5, friend_name : d6, isOnline : d7},...
+			"rooms" : Map()
+				K : V
+			"friend_requests" : Map()
+				K : V
+			"room_requests" : Map()
+				K : V
+			*/
+			user.put('friends', new Map());
+			user.put('friend_requests', new Map());
+			user.put('rooms', new Map());
+		</script>
 	</head>
-	<style>
-	body#main_body{
-		width:100%;
-		height:100%;
-		margin:0;
-		background-color:#80bdff;
-	}
-	div#chatting_header_container{
-		height:10%;
-		width:100%;
-		background-color:#0066ff;
-	}
-
-	</style>
-	<body id='main_body'>
-		<div class='panel-info'>
-			<div id='chatting_header_container' class='panel-heading'>
-				<div id='chatting_header_content'>
-				</div>
-			</div>
-			<div id='chatting_body_container' class='panel-body' style='width:100%;height:90%;'>
-				<div class='panel-group'>
-					<div id='chatting_body_col1' style='float:left;width:80%;height:100%;'>
-						<div id='chatting_body_col1_content'>
-						</div>
-					</div>
-					<div id='chatting_body_col2' style='float:left;width:19%;height:100%;margin-left:1%;'>
-						<div id='chatting_body_col2_content'>
-						</div>
-					</div>
-				</div>
-			</div>
+	<body id='main_body' style='width:100%;height:100%;background-color:#80bdff;'>
+		<div class='panel-group' id='main_panel_group' style='width:100%;height:100%;float:left;'>
 		</div>
+		<input type='hidden' id='chat_addr' value=<%= addr.chat_addr %>></input>
 	</body>
-	<script>
-	var setCol1 = function(doc){
-		var target = $('div[id=chatting_body_col1_content]');
-		var target_par = target.parent();
-		
-		target.remove();
-		$('<div id="chatting_body_col1_content"></div>').html(doc).appendTo(target_par);
-	}
-	var setLoginTab = function(id){
-		var target_tab = $('div[id=chatting_header_content]');
-		var target_par = target_tab.parent();
 
-		$.get('/login_tab', {
-			user_id:id
-		}, function(doc){
-			target_tab.remove();
-			$('<div id="chatting_header_content"></div>').append(doc).appendTo(target_par);
-		});
-	};
-	var setUnloginTab = function(){
-		var target_tab = $('div[id=chatting_header_content]');
-		var target_par = target_tab.parent();
+	<% include ../static_files/unlogin_panel %>
+	<% include ../static_files/login_panel %>
+	<% include ../friend_list/friend_list %>
 
-		$.ajax({
-			url : '/unlogin_tab',
-			method : 'GET',
-			success : function(doc){
-				target_tab.remove();
-				$('<div id="chatting_header_content"></div>').append(doc).appendTo(target_par);
-			}
-		});
+	<script text='text/javascript'>
+	var getChatAddr = function(){
+		return $('input[id=chat_addr]').val();
 	};
-	var getChattingServerAddr = function(){
-		$.ajax({
-			url : '/chatting_server_address',
-			method : 'POST',
-			dataType : 'json',
-			success : function(msg){
-				switch(msg.result){
-					case 0://fail
-					alert('can\'t get chatting server address\nplease try again');
-					break;
-					case 1:
-					break;
-				}
-				chatting_server_address = msg.chat_url;
-			}
-		});
+	var initializeMainPanel = function(){
+		$('body[id=main_body] div[id=main_panel_group]').remove();
+		$('body[id=main_body]').append($('<div class="panel-group" id="main_panel_group" style="width:100%;height:100%;text-align:center;float:left;"></div>'));
+	};
+	var appendMainPanel = function(doc){
+		$('body[id=main_body] div[id=main_panel_group]').append(doc);
 	};
 
-	var setFriendList = function(){
-		var target_col = $('div[id=chatting_body_col2_content]');
-		var target_par = target_col.parent();
-		$.ajax({
-			url : '/friend_list',
-			method : 'GET',
-			success : function(doc){
-				target_col.remove();
-				$('<div id="chatting_body_col2_content"></div>').append(doc).appendTo(target_par);
-			}
-		});
-	}
-
-	var changeToLogin = function(id){
-		setLoginTab(id);
-		$.ajax({
-			url : '/welcome',
-			method:'GET',
-			success : function(doc){
-				setCol1(doc);
-			}
-		});
-		setFriendList();
-		$.getScript('/loadSocketScript').fail(function(){
-			alert('스크립트 로드에 실패 했습니다.\n다시 로그인 해주세요.');
-		});
-	};
-
-	$(function(){
-		getChattingServerAddr();
-		setUnloginTab();
+	$(document).ready(function(){
+		appendMainPanel(getUnloginPanelForm());
 	});
 	</script>
 </html>

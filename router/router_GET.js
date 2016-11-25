@@ -1,15 +1,9 @@
 module.exports = function(app){
 	var fs = require("fs");
-	var bodyParser = require("body-parser");
 	var path = require("path");
 	var url = require('url');
 	var member = require('../DB/db_member');
-
-	app.use(bodyParser.json());//to support json encoded body
-	app.use(bodyParser.urlencoded({
-		extended : true
-	}));//to support url encoded body
-
+	var server = require('../server');
 
 	//################## GET #####################
 		//return socket.io.js file
@@ -28,8 +22,16 @@ module.exports = function(app){
 		});
 	});
 
-	app.get('/loadSocketScript', function(req, res){
-		var file_path = '../views/scripts/socket_io_scripts.js';
+	app.get('/', function(req, res){
+		res.render('static_files/chatting', {
+			addr : {
+				chat_addr : (server.getChatProtocol() + '://' + server.getChatServerIPAddr() + ':' + server.getChatServerPort())
+			}
+		});
+	});
+
+	app.get('/loadClientSocketScript', function(req, res){
+		var file_path = '../views/scripts/client_socket_io.ejs';
 		var real_path = path.join(__dirname, file_path);
 
 		fs.readFile(real_path, function(err, data){
@@ -39,68 +41,12 @@ module.exports = function(app){
 				return;
 			}
 			res.writeHead(200, {'Content-Type':'text/javascript'});
-			res.end(data);
-		});
-	});
-
-	//base
-	app.get('/', function(req, res){
-		res.render('static_files/gate');
-	});
-
-	app.get('/chatting', function(req, res){
-		res.render('static_files/chatting');
-	});
-
-	app.get('/unlogin_tab', function(req, res){
-		res.render('static_files/unlogin_tab');
-	});
-
-	app.get('/friend_list', function(req, res){
-		res.render('friend_list/friend_list');
-	});
-
-	app.get('/friend_requests', function(req, res){
-		res.render('friend_request/friend_request_list');
-	});
-
-	app.get('/user_info', function(req, res){
-		res.render('client/user_info');
-	});
-
-	app.get('/welcome', function(req, res){
-		res.render('static_files/chatting_main');
-	});
-
-	app.get('/login_tab', function(req, res){
-		var uri = req.url;
-		var query = url.parse(uri, true).query;
-		var user_id = query.user_id;
-
-		member.read_member({
-			id : user_id
-		}, function(result){
-			switch(result.result){
-				case 0:
-					res.render('static_files/login_tab');
-				break;
-				case 1:
-					res.render('static_files/login_tab', {user_id : result.data.nickname});
-				break;
-			}
+			res.end(data.toString().replace(/<script>/g, '').replace(/<\/script>/g, ''));
 		});
 	});
 
 	app.get('/create_member', function(req, res){
 		res.render('client/create_member');
-	});
-
-	app.get('/read_rooms', function(req, res){
-		res.render('room/roomList');
-	});
-
-	app.get('/read_roomInvitation', function(req, res){
-		res.render('room/roomInvitation');
 	});
 
 	//process image request

@@ -1,0 +1,64 @@
+<div id='user-profile-form' style='display:none;'>
+	<div id='profile-panel' class='panel panel-default' style='width:100%;height:100%;'>
+		<div class='panel-heading' style='height:15%;color:white;background-color:#0066ff;'>
+			<h3>Profile
+			</h3>
+		</div>
+		<div class='panel-body' style='height:70%;'>
+			<table class='table table-hover'>
+				<tbody>
+					<tr>
+						<td><B>ID</B></td>
+						<td>%user_id%</td>
+					</tr>
+					<tr>
+						<td><B>Nick Name</B></td>
+						<td>
+							<input id='nick_input' type='input' value='%user_nick%' />
+						</td>
+					</tr>
+					<tr>
+						<td><B>Name</B></td>
+						<td>
+							<input id='name_input' type='input' value='%user_name%'>
+						</td>
+					</tr>
+					<tr>
+						<td><B>Create Date</B></td>
+						<td>%user_cdate%</td>
+					</tr>
+				</tbody>
+			</table>
+			<div>
+				<button type='button' class='btn btn-success btn-md' onclick='javascript:onEditClick();'>
+					Edit
+				</button>
+			</div>
+		</div>
+		<div class='panel-footer' style='height:15%;color:white;background-color:#0066ff;'>
+		</div>
+	</div>
+</div>
+
+<script>
+	var getRenderedProfilePanelForm = function(){
+		var form = $('div[id=user-profile-form]').html();
+		form = form.replace(/%user_id%/g, user.get('user_id'));
+		form = form.replace(/%user_nick%/g, user.get('user_nick'));
+		form = form.replace(/%user_name%/g, user.get('user_name'));
+		form = form.replace(/%user_cdate%/g, transDate(user.get('user_cdate'), 'yyyy-mm-dd  HH:MM:SS'));
+		return form;
+	};
+	var onEditClick = function(){
+		var e_nick = $('body[id=main_body] div[id=main_panel_group] div[id=profile-panel] div.panel-body input[id=nick_input]').val();
+		var e_name = $('body[id=main_body] div[id=main_panel_group] div[id=profile-panel] div.panel-body input[id=name_input]').val();
+		
+		socket.json.emit('client_member', {
+			action : 'update',
+			data : {
+				nickname : e_nick,
+				name : e_name
+			}
+		});
+	};
+</script>

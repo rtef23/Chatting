@@ -1,0 +1,356 @@
+<script>
+$(function(){
+	//socket.off('server_friend');
+	socket.on('disconnect', function(){
+		alert('연결이 종료 되었습니다.');
+		document.location = '/';
+	});
+
+	socket.on('server_connect', function(msg){
+		switch(msg.action){
+			case 'response':
+			{
+				switch(msg.about){
+					case 'c_connect':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('error on server\nplease try again');
+							}
+							break;
+							case 1:
+							{
+								initializeMainPanel();
+								appendMainPanel(getLoginPanelForm());
+								appendMainPanel(getFriendListForm());
+								onHomeClick();
+
+								user.put('user_id', msg.data.user_id);
+								user.put('user_nick', msg.data.user_nick);
+								user.put('user_name', msg.data.user_name);
+								user.put('user_cdate', msg.data.user_cdate);
+
+								socket.json.emit('client_friend', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+								socket.json.emit('client_friendRequest', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+								socket.json.emit('client_room', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+							}
+							break;
+							case 2:
+							{
+								alert('delete already user login');
+								initializeMainPanel();
+								appendMainPanel(getLoginPanelForm());
+								appendMainPanel(getFriendListForm());
+								onHomeClick();
+
+								user.put('user_id', msg.data.user_id);
+								user.put('user_nick', msg.data.user_nick);
+								user.put('user_name', msg.data.user_name);
+								user.put('user_cdate', msg.data.user_cdate);
+
+								socket.json.emit('client_friend', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+								socket.json.emit('client_friendRequest', {
+									action : 'read',
+									data : {
+										target : 'all'
+									}
+								});
+							}
+							break;
+							case 3:
+							{
+								alert('not member');
+							}
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+			case 'delete':
+			{
+
+			}
+			break;
+		}
+	});
+
+	socket.on('server_member', function(msg){
+		switch(msg.action){
+			case 'response':
+			{
+				switch(msg.about){
+					case 'r_member':
+					{
+						renderFriendSearch(msg.data);
+					}
+					break;
+					case 'u_member':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('프로필을 수정하는데 실패 했습니다.\n잠시 후 다시 시도해주세요.');
+							}
+							break;
+							case 1:
+							{
+								user.remove('user_nick');
+								user.remove('user_name');
+								user.put('user_nick', msg.data.e_nick);
+								user.put('user_name', msg.data.e_name);
+							}
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+		}
+	});
+
+	socket.on('server_friend', function(msg){
+		switch(msg.action){
+			case 'response':
+			{
+				switch(msg.about){
+					case 'r_friend_all':
+					{
+						switch(msg.data.result){
+							case 0:
+							{//error
+								alert('전체 친구 목록을 읽어들이는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+							case 1:
+							{
+								user.remove('friends');
+								user.put('friends', new Map());
+								var friends = user.get('friends');
+								var data = msg.data.data;
+								for(var i in data){
+									friends.put(data[i].friend_id, {
+										friend_id : data[i].friend_id,
+										friend_nick : data[i].friend_nick,
+										friend_name : data[i].friend_name,
+										isOnline : data[i].isOnline
+									});
+								}
+								renderFriendList();
+							}
+							break;
+						}
+					}
+					break;
+					case 'd_friend':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('친구 삭제에 실패 했습니다.');
+							}
+							break;
+							case 1:
+							{
+								var friends = user.get('friends');
+								friends.remove(msg.data.target);
+								deleteFriendList(msg.data.target);
+							}
+							break;
+							case 2:
+							{
+								alert('유효하지 않은 친구 삭제 요청입니다.');
+							}
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+			case 'update':
+			{
+				var data = msg.data;
+				var friends = user.get('friends');
+				friends.put(data.friend_id, data);
+				updateFriendList(friends.get(data.friend_id));
+			}
+			break;
+			case 'delete':
+			{
+				var friends = user.get('friends');
+				friends.remove(msg.data.target);
+				deleteFriendList(msg.data.target);
+			}
+			break;
+		}
+	});
+
+	socket.on('server_friendRequest', function(msg){
+		switch(msg.action){
+			case 'response':
+			{
+				switch(msg.about){
+					case 'c_friendRequest':{
+						switch(msg.result){
+							case 0:
+							{
+								alert('error on server please try again');
+							}
+							break;
+							case 1:
+							{
+								alert('친구 요청을 보내는 것에 성공하였습니다.');
+							}
+							break;
+							case 2:
+							{
+								alert('유효하지 않은 친구 요청입니다.');
+							}
+							break;
+							case 3:
+							{
+								alert('이미 친구 요청을 보냈거나 친구입니다.');
+							}
+							break;
+						}
+					}
+					case 'r_friendRequest_all':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('친구 요청 목록을 불러오는데 실패 했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+							case 1:
+							{
+								user.remove('friend_requests');
+								user.put('friend_requests', new Map());
+								var friend_request = user.get('friend_requests');
+								for(var i in msg.data){
+									friend_request.put(msg.data[i].from_id, {
+										from_id : msg.data[i].from_id,
+										from_nick : msg.data[i].from_nick,
+										from_name : msg.data[i].from_name,
+										request_date : msg.data[i].request_date
+									});
+								}
+								renderFriendRequestList();
+							}
+							break;
+						}
+					}
+					break;
+					case 'u_friendRequest':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('친구 요청 수락에 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+							case 1:
+							{
+								var friends = user.get('friends');
+								friends.put(msg.data.friend_id, msg.data);
+								addFriendList(friends.get(msg.data.friend_id));
+								removeFriendRequestItem(msg.data.friend_id);
+							}
+							break;
+							case 2:
+							{
+								alert('유호하지 않은 친구 요청 수락입니다.');
+							}
+							break;
+						}
+					}
+					break;
+					case 'd_friendRequest':
+					{
+						switch(msg.result){
+							case 0:
+							{
+								alert('친구 요청 거절에 에러가 발생했습니다.\n잠시 후 다시 시도해 주세요.');
+							}
+							break;
+							case 1:
+							{
+								removeFriendRequestItem(msg.data.friend_id);
+							}
+							break;
+							case 2:
+							{
+								alert('유효하지 않은 친구요청 거절입니다.');
+							}
+							break;
+						}
+					}
+					break;
+				}
+			}
+			break;
+			case 'update':
+			{
+				var friend_request = user.get('friend_requests');
+				friend_request.put(msg.data.from_id, {
+					from_id : msg.data.from_id,
+					from_nick : msg.data.from_nick,
+					from_name : msg.data.from_name,
+					request_date : msg.data.request_date
+				});
+				renderFriendRequestList();
+			}
+			break;
+		}
+	});
+	
+	socket.on('server_room', function(msg){
+		switch(msg.action){
+			case 'create':
+			{
+
+			}
+			break;
+			case 'update':
+			{
+
+			}
+			break;
+			case 'delete':
+			{
+
+			}
+			break;
+			case 'response':
+			{
+
+			}
+			break;
+		}		
+	});
+});
+</script>

@@ -117,23 +117,26 @@ $(function(){
   $('form[id=input_form]').submit(function(){
     if(format_check()){
       $.ajax({
-        url : '/member_create',
+        url : '/client_member',
         method : 'POST',
         dataType:'json',
         data : {
-          id : $('input[id=input_id]').val(),
-          password : $('input[id=input_pass]').val(),
-          nickname : $('input[id=input_nick]').val(),
-          name : $('input[id=input_name]').val()
+          action : 'create',
+          value : {
+            id : $('input[id=input_id]').val(),
+            password : $('input[id=input_pass]').val(),
+            nickname : $('input[id=input_nick]').val(),
+            name : $('input[id=input_name]').val()
+          }
         },
         success : function(msg_data){
-          switch(msg_data.result){
-            case 0:
+          switch(msg_data.value.result){
+            case 1:
             {
               window.close();
               break;
             }
-            case 1:
+            case 0:
             {
               alert('이미 존재하는 회원 ID입니다.');
               $('input[id=input_id]').focus();
