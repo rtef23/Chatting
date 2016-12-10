@@ -23,15 +23,41 @@
 				</div>
 			</div>
 			<div style='width:30%;height:100%;float:left;background-color:#0066ff;'>
-				<div id='room-interface' class='form-inline'>
+				<div id='room-info-panel' style='height:80%;'>
+					<div id='room-meta-info' style='height:20%;width:100%;background-color:#cce6ff;'>
+						<table class='table'>
+							<tr>
+								<td colspan='2'>
+								<span id='user-id' class='label label-default'>
+								</span>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<span class='label label-info'>
+									# of User
+									</span>
+								</td>
+								<td>
+									<span id='num-of-user' class='label label-success'>
+									</span>
+								</td>
+							</tr>
+						</table>
+					</div>
+					<div id='connected-user-list' class='list-group' style='width=100%;height:80%;overflow-y:scroll;background-color:white;'>
+					</div>
+				</div>
+				<div id='room-interface' class='form-inline' style='height:20%;'>
 					<button class='btn btn-sm btn-info form-control'>
 						Leave Room
 					</button>
 					<button class='btn btn-sm btn-info form-control'>
 						Close Room
 					</button>
-				</div>
-				<div>
+					<button class='btn btn-sm btn-info form-control'>
+						Invite User
+					</button>
 				</div>
 			</div>
 		</div>
@@ -54,6 +80,23 @@
 		</div>
 	</div>
 </div>
+<div id='friend-list-item-form' style='display:none;'>
+	<div class='list-group' id='%member_id%'>
+		<span class='label label-%member_state%'>
+			%member_state_text%
+		</span>
+		%member_nick%
+	</div>
+</div>
+<div id='not-friend-list-item-form' style='display:none;'>
+	<div class='list-group' id='%member_id%'>
+		<span class='badge'>
+			Not Friend
+		</span>
+		%member_id%
+	</div>
+</div>
+
 <script>
 var color_index = 0;
 var opener;
@@ -64,7 +107,96 @@ $(function(){
 		opener.closeChildWindow("<%=room_id %>");
 	});
 	opener.requestChatLog('<%=room_id %>');
+	updateChattingWindow(getChattingData());
 });
+var getChattingData = function(){
+	var room_info = opener.user.get('rooms').get('<%=room_id %>');
+	var friends = opener.user.get('friends');
+	var res = {
+		members : []
+	};
+
+	for(var i in room_info.members){
+		if(friends.containsKey(room_info.members[i].user_id)){
+			res.members.push({
+				isfriend : true,
+				member_id : room_info.members[i].user_id,
+				member_nick : friends.get(room_info.members[i].user_id).friend_nick,
+				isonline : friends.get(room_info.members[i].user_id).isOnline
+			});
+		}else{
+			res.members.push({
+				isfriend : false,
+				member_id : room_info.members[i].user_id
+			});
+		}
+	}
+	alert(JSON.stringify(res));
+	return res;
+};
+var updateChattingWindow = function(data){
+	/*
+	input
+	{
+		members : [
+			{
+				isfriend : d1[true|false],
+				member_id : d2, 
+				iff isfriend == true
+					member_nick : d3,
+					isonline : d4[true|false]
+			},...
+		]
+	}
+	*/
+	//alert(JSON.stringify(data));
+	$('span#user-id').text(opener.user.get('user_id'));
+	$('span[id=num-of-user]').text(data.members.length);
+	for(var i in data.members){
+		if(data.members[i].isfriend){
+			addFriendMember();
+		}else{
+			//data.members[i].isfriend == false
+			addNotFriendMember();
+		}
+	}
+};
+var addFriendMember = function(data){
+	/*
+	data
+	{
+		member_id : d1,
+		member_nick : d2,
+		isonline : d3
+	}
+	*/
+	var form = $('div#friend-list-item-form').html();
+	
+	form = form.replace(/%member_id%/g, data.member_id);
+	form = form.replace(/%member_nick%/g, data.member_nick);
+	if(data.isonline){
+		form = form.replace(/%member_state%/g, 'success');
+		form = form.replace(/%member_state_text%/g, 'Online');
+	}else{
+		form = form.replace(/%member_state%/g, 'danger');
+		form = form.replace(/%member_state_text%/g, 'Offline');
+	}
+
+	$('div#connected-user-list').append(form);
+};
+var addNotFriendMember = function(data){
+	/*
+	data
+	{
+		member_id : d1
+	}
+	*/
+	var form = $('div#not-friend-list-item-form').html();
+
+	form = form.replace(/%member_id%/g, data.member_id);
+
+	$('div#connected-user-list').append(form);
+};
 
 var addMessage = function(data){
 	/*
